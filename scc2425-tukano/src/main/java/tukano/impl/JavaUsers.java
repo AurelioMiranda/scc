@@ -16,39 +16,46 @@ import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
 import utils.DB;
+import tukano.db.CosmosDBLayer;
 
 public class JavaUsers implements Users {
-	
+
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static Users instance;
-	
+
 	synchronized public static Users getInstance() {
-		if( instance == null )
+		if (instance == null)
 			instance = new JavaUsers();
 		return instance;
 	}
-	
-	private JavaUsers() {}
-	
+
+	private JavaUsers() {
+	}
+
 	@Override
 	public Result<String> createUser(User user) {
 		Log.info(() -> format("createUser : %s\n", user));
 
-		if( badUserInfo( user ) )
-				return error(BAD_REQUEST);
+		if (badUserInfo(user))
+			return error(BAD_REQUEST);
 
-		return errorOrValue( DB.insertOne( user), user.getUserId() );
+		return Result.errorOrValue(
+				CosmosDBLayer.getInstance().insertOne(user),
+				user.getUserId());
 	}
 
 	@Override
 	public Result<User> getUser(String userId, String pwd) {
-		Log.info( () -> format("getUser : userId = %s, pwd = %s\n", userId, pwd));
+		Log.info(() -> format("getUser : userId = %s, pwd = %s\n", userId, pwd));
 
-		if (userId == null)
-			return error(BAD_REQUEST);
-		
-		return validatedUserOrError( DB.getOne( userId, User.class), pwd);
+		if (userId == null) {
+			return Result.error(Result.ErrorCode.BAD_REQUEST);
+		}
+
+		return Result.errorOrResult(
+				CosmosDBLayer.getInstance().getOne(userId, User.class),
+				user -> validatedUserOrError(Result.ok(user), pwd));
 	}
 
 	@Override
@@ -58,54 +65,56 @@ public class JavaUsers implements Users {
 		if (badUpdateUserInfo(userId, pwd, other))
 			return error(BAD_REQUEST);
 
-		return errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), pwd), user -> DB.updateOne( user.updateFrom(other)));
+		return errorOrResult(
+				validatedUserOrError(CosmosDBLayer.getInstance().getOne(userId, User.class), pwd),
+				user -> CosmosDBLayer.getInstance().updateOne(user.updateFrom(other)));
 	}
 
 	@Override
 	public Result<User> deleteUser(String userId, String pwd) {
 		Log.info(() -> format("deleteUser : userId = %s, pwd = %s\n", userId, pwd));
 
-		if (userId == null || pwd == null )
+		if (userId == null || pwd == null)
 			return error(BAD_REQUEST);
 
-		return errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), pwd), user -> {
+		return errorOrResult(
+				validatedUserOrError(CosmosDBLayer.getInstance().getOne(userId, User.class), pwd),
+				user -> { // TODO: do we need to delete this, or should it be "Deleted User"...
+					Executors.defaultThreadFactory().newThread(() -> {
+						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
+						JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
+					}).start();
 
-			// Delete user shorts and related info asynchronously in a separate thread
-			Executors.defaultThreadFactory().newThread( () -> {
-				JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
-				JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
-			}).start();
-			
-			return DB.deleteOne( user);
-		});
+					// TODO: review this
+					return (Result<User>) CosmosDBLayer.getInstance().deleteOne(user);
+				});
 	}
 
 	@Override
 	public Result<List<User>> searchUsers(String pattern) {
-		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
+		Log.info(() -> format("searchUsers : pattern = %s\n", pattern));
 
-		var query = format("SELECT * FROM User u WHERE UPPER(u.userId) LIKE '%%%s%%'", pattern.toUpperCase());
-		var hits = DB.sql(query, User.class)
-				.stream()
+		var query = format("SELECT * FROM c WHERE CONTAINS(LOWER(c.userId), '%s')", pattern.toLowerCase());
+		var hits = CosmosDBLayer.getInstance().query(User.class, query);
+
+		List<User> users = hits.value().stream()
 				.map(User::copyWithoutPassword)
 				.toList();
-
-		return ok(hits);
+		return Result.ok(users);
 	}
 
-	
-	private Result<User> validatedUserOrError( Result<User> res, String pwd ) {
-		if( res.isOK())
-			return res.value().getPwd().equals( pwd ) ? res : error(FORBIDDEN);
+	private Result<User> validatedUserOrError(Result<User> res, String pwd) {
+		if (res.isOK())
+			return res.value().getPwd().equals(pwd) ? res : error(FORBIDDEN);
 		else
 			return res;
 	}
-	
-	private boolean badUserInfo( User user) {
+
+	private boolean badUserInfo(User user) {
 		return (user.userId() == null || user.pwd() == null || user.displayName() == null || user.email() == null);
 	}
-	
-	private boolean badUpdateUserInfo( String userId, String pwd, User info) {
-		return (userId == null || pwd == null || info.getUserId() != null && ! userId.equals( info.getUserId()));
+
+	private boolean badUpdateUserInfo(String userId, String pwd, User info) {
+		return (userId == null || pwd == null || info.getUserId() != null && !userId.equals(info.getUserId()));
 	}
 }
