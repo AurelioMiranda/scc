@@ -1,11 +1,26 @@
-# Use the official Tomcat 10 image
-FROM tomcat:10-jdk17
+# Use an official JDK 17 runtime as the base image
+FROM eclipse-temurin:17-jdk
 
-# Remove default web apps (optional, to keep the image clean)
-RUN rm -rf /usr/local/tomcat/webapps/*
+# Set environment variables for Tomcat
+ENV CATALINA_HOME /usr/local/tomcat
+ENV PATH $CATALINA_HOME/bin:$PATH
+ENV TOMCAT_VERSION 9.0.76
 
-# Copy your WAR file into the webapps directory
-COPY target/tukano-1.war /usr/local/tomcat/webapps/
+# Install Tomcat
+RUN mkdir -p "$CATALINA_HOME" && \
+    curl -fSL https://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz -o /tmp/tomcat.tar.gz && \
+    tar -xvf /tmp/tomcat.tar.gz -C $CATALINA_HOME --strip-components=1 && \
+    rm /tmp/tomcat.tar.gz
 
-# Expose port 8080
+# Set the working directory in the container
+WORKDIR /usr/local/tomcat
+
+# Copy the application files (e.g., WAR file) into Tomcat's webapps directory
+# Assuming you have a WAR file created by your build process in a `target` folder
+COPY target/*.war $CATALINA_HOME/webapps/
+
+# Expose the Tomcat default port
 EXPOSE 8080
+
+# Run Tomcat when the container starts
+CMD ["catalina.sh", "run"]
