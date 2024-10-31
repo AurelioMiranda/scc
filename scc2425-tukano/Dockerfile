@@ -19,6 +19,9 @@ WORKDIR /usr/local/tomcat
 # Assuming you have a WAR file created by your build process in a `target` folder
 COPY target/*.war $CATALINA_HOME/webapps/
 
+# Copy the properties/secrets file into the Docker
+COPY config/app.properties /path/in/container/app.properties
+
 # Expose the Tomcat default port
 EXPOSE 8080
 

@@ -13,3 +13,4 @@ scc2425-tukano/target/*
 .classpath
 .vscode
 scc2425-tukano/pom.xml
+scc2425-tukano/config/app.properties

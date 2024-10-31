@@ -13,15 +13,16 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobContainerClientBuilder;
 import tukano.api.Result;
+import utils.Props;
 
 public class FilesystemStorage implements BlobStorage{
-    private static final String BLOBS_CONTAINER_NAME = "shorts";
-    private static final String BLOBS_CONTAINER_CONNEC_STRING = "sdwadwadwdawd";
+    private static final String BLOBS_CONTAINER_NAME = Props.get("BLOB_CONTAINER_SHORTS", "Shorts");;
+    private static final String BLOBS_CONTAINER_CONNECTION_STRING = Props.get("STORAGE_ACCOUNT_CONNECTION", "default");
     private final BlobContainerClient containerClient;
 
     public FilesystemStorage(){
         containerClient = new BlobContainerClientBuilder()
-                                .connectionString(BLOBS_CONTAINER_CONNEC_STRING)
+                                .connectionString(BLOBS_CONTAINER_CONNECTION_STRING)
                                 .containerName(BLOBS_CONTAINER_NAME)
                                 .buildClient();
     }
