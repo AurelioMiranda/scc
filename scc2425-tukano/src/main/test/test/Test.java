@@ -11,6 +11,7 @@ import tukano.clients.rest.RestBlobsClient;
 import tukano.clients.rest.RestShortsClient;
 import tukano.clients.rest.RestUsersClient;
 import tukano.impl.rest.TukanoRestServer;
+import utils.Props;
 
 public class Test {
 	
@@ -19,6 +20,8 @@ public class Test {
 	}
 	
 	public static void main(String[] args ) throws Exception {
+		Props.loadProps("./resources/azurekeys-region.props");
+		
 		new Thread( () -> {	
 			try { 
 				TukanoRestServer.main( new String[] {} );
