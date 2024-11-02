@@ -7,22 +7,20 @@ import static tukano.api.Result.errorOrValue;
 import static tukano.api.Result.ok;
 import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
+import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
 import static tukano.api.Result.ErrorCode.NOT_FOUND;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
-import utils.DB;
 import tukano.db.CosmosDBLayer;
 
 public class JavaUsers implements Users {
 
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
-
 	private static Users instance;
 
 	synchronized public static Users getInstance() {
@@ -50,11 +48,11 @@ public class JavaUsers implements Users {
 	public Result<User> getUser(String userId, String pwd) {
 		Log.info(() -> format("getUser : userId = %s, pwd = %s\n", userId, pwd));
 
-		if (userId == null) {
-			return Result.error(Result.ErrorCode.BAD_REQUEST);
+		if (userId == null || pwd == null) {
+			return error(BAD_REQUEST);
 		}
 
-		return Result.errorOrResult(
+		return errorOrResult(
 				CosmosDBLayer.getInstance().getOne(userId, User.class),
 				user -> validatedUserOrError(Result.ok(user), pwd));
 	}
@@ -68,7 +66,10 @@ public class JavaUsers implements Users {
 
 		return errorOrResult(
 				validatedUserOrError(CosmosDBLayer.getInstance().getOne(userId, User.class), pwd),
-				user -> CosmosDBLayer.getInstance().updateOne(user.updateFrom(other)));
+				user -> {
+					user.updateFrom(other);
+					return CosmosDBLayer.getInstance().updateOne(user);
+				});
 	}
 
 	@Override
@@ -80,29 +81,21 @@ public class JavaUsers implements Users {
 
 		return errorOrResult(
 				validatedUserOrError(CosmosDBLayer.getInstance().getOne(userId, User.class), pwd),
-				user -> { // TODO: switch to function
-					Executors.defaultThreadFactory().newThread(() -> {
-						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
-						JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
-					}).start();
-					
+				user -> {
 					var deletedUser = CosmosDBLayer.getInstance().deleteOne(user);
-
-					if ((Result<User>)deletedUser instanceof Result<User>){
-						return (Result<User>)deletedUser;
-					}
-
-					return error(NOT_FOUND);
+					return deletedUser.isOK() ? ok(user) : error(NOT_FOUND);
 				});
 	}
 
 	@Override
 	public Result<List<User>> searchUsers(String pattern) {
+		if (pattern == null) {
+			return Result.error(BAD_REQUEST);
+		}
 		Log.info(() -> format("searchUsers : pattern = %s\n", pattern));
 
-		var query = format("SELECT * FROM c WHERE CONTAINS(LOWER(c.userId), '%s')", pattern.toLowerCase());
+		var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
 		var hits = CosmosDBLayer.getInstance().query(User.class, query);
-
 		List<User> users = hits.value().stream()
 				.map(User::copyWithoutPassword)
 				.toList();
