@@ -7,6 +7,7 @@ import static tukano.api.Result.errorOrValue;
 import static tukano.api.Result.ok;
 import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
+import static tukano.api.Result.ErrorCode.NOT_FOUND;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -79,14 +80,19 @@ public class JavaUsers implements Users {
 
 		return errorOrResult(
 				validatedUserOrError(CosmosDBLayer.getInstance().getOne(userId, User.class), pwd),
-				user -> { // TODO: do we need to delete this, or should it be "Deleted User"...
+				user -> { // TODO: switch to function
 					Executors.defaultThreadFactory().newThread(() -> {
 						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
 						JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
 					}).start();
+					
+					var deletedUser = CosmosDBLayer.getInstance().deleteOne(user);
 
-					// TODO: review this
-					return (Result<User>) CosmosDBLayer.getInstance().deleteOne(user);
+					if ((Result<User>)deletedUser instanceof Result<User>){
+						return (Result<User>)deletedUser;
+					}
+
+					return error(NOT_FOUND);
 				});
 	}
 
