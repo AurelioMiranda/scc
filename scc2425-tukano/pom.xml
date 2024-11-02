@@ -54,7 +54,7 @@
                     	<username>maven</username>
                     	<password>s3cret</password>
                     	<update>true</update>
-                    	<path>/tukano-1</path>
+                    	<path>/tukano</path>
 			       </configuration>
 			</plugin>
 			<plugin>
