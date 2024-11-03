@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.Application;
 import tukano.impl.Token;
 import utils.Args;
 import utils.IP;
+import utils.Props;
 
 public class TukanoRestServer extends Application {
 	final private static Logger Log = Logger.getLogger(TukanoRestServer.class.getName());
@@ -28,6 +29,7 @@ public class TukanoRestServer extends Application {
 	public TukanoRestServer() {
 		serverURI = String.format(SERVER_BASE_URI, IP.hostname(), PORT);
 		loadResources();
+		Props.loadProps("azurekeys-region.props");
 	}
 
 	private void loadResources() {
@@ -48,11 +50,11 @@ public class TukanoRestServer extends Application {
 	public static void main(String[] args) throws Exception {
 		Args.use(args);
 
-		//Props.loadProps("azurekeys-region.props");
-
+		Props.loadProps("azurekeys-region.props");
+		Log.info("###################################################################################################################");
+		Log.info(Props.get("BLOB_CONTAINER_NAME", "not workingz"));
 		Token.setSecret(Args.valueOf("-secret", ""));
 		// Props.load( Args.valueOf("-props", "").split(","));
-
 		new TukanoRestServer().start();
 	}
 

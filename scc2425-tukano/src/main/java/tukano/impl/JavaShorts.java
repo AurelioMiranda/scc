@@ -59,7 +59,7 @@ public class JavaShorts implements Shorts {
 
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 				var key = "short:" + shortId;
-				var value = JSON.encode(shrt.copyWithLikes_And_Token(0));
+				var value = JSON.encode(shrt);
 				jedis.set(key, value);
 				jedis.expire(key, RedisCache.ALIVE_TIME);
 

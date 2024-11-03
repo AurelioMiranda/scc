@@ -17,12 +17,16 @@ import java.util.logging.Logger;
 
 import tukano.api.Result;
 import tukano.api.Result.ErrorCode;
-import tukano.impl.JavaUsers;;
+import tukano.impl.JavaUsers;
+import utils.Props;;
 
 public class CosmosDBLayer {
-	private static final String CONNECTION_URL = "https://scctukanocosmos70068.documents.azure.com:443/";
-	private static final String DB_KEY = "VByJA8a4Jp8QrnhLaVDhkHIDXOWWBcsUltiS12eLEe35NofjmVjKGajSXOF9iFJ17SZY2qhwEhMhACDbHpYZ1A==";
-	private static final String DB_NAME = "Tukano"; // USER db name
+	//private static final String CONNECTION_URL = "https://scctukanocosmos70068.documents.azure.com:443/";
+	private static final String CONNECTION_URL = Props.get("COSMOSDB_URL", "");
+	//private static final String DB_KEY = "VByJA8a4Jp8QrnhLaVDhkHIDXOWWBcsUltiS12eLEe35NofjmVjKGajSXOF9iFJ17SZY2qhwEhMhACDbHpYZ1A==";
+	private static final String DB_KEY = Props.get("COSMOSDB_KEY", "");
+	//private static final String DB_NAME = "Tukano"; // USER db name
+	private static final String DB_NAME = Props.get("COSMOSDB_DATABASE_NAME", "");
 	public static final String CONTAINER_USERS = "Users";
 	public static final String CONTAINER_SHORTS = "Shorts";
 	public static final String CONTAINER_FOLLOWING = "Following";

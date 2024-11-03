@@ -1,14 +1,13 @@
-BlobStoreConnection=DefaultEndpointsProtocol=https;AccountName=stoxxxxxnortheurope;AccountKey=R6eBqQeIwFjdvIX2fDg/eM3W0NudmStHEBmMrAoIzX5A0RLrWgUYD+c9yiZPV6jeTuEQF5oJJf6w+AStWoxHtA==;EndpointSuffix=core.windows.net
-
 # Storage Account Secrets
 # Blobs and Containers
 STORAGE_ACCOUNT_CONNECTION=DefaultEndpointsProtocol=https;AccountName=scctukano70068;AccountKey=3HbFmeMeRintQiY47zzBdY/bWc/s2SvvzA9h+fClVf92W0c0E3QQ8GP/ve433Jozp2tQ0WGtrpSv+ASt3kZN0A==;EndpointSuffix=core.windows.net
 STORAGE_ACCOUNT_KEY=3HbFmeMeRintQiY47zzBdY/bWc/s2SvvzA9h+fClVf92W0c0E3QQ8GP/ve433Jozp2tQ0WGtrpSv+ASt3kZN0A==
 STORAGE_ACCOUNT_NAME=scctukano70068
-BLOB_CONTAINER_SHORTS=Shorts
+BLOB_CONTAINER_NAME=shorts
 
 # Cosmo DB Secrets
 COSMOSDB_URL=https://scctukanocosmos70068.documents.azure.com:443/
 COSMOSDB_KEY=VByJA8a4Jp8QrnhLaVDhkHIDXOWWBcsUltiS12eLEe35NofjmVjKGajSXOF9iFJ17SZY2qhwEhMhACDbHpYZ1A==
 COSMOSDB_CONNECTION=AccountEndpoint=https://scctukanocosmos70068.documents.azure.com:443/;AccountKey=VByJA8a4Jp8QrnhLaVDhkHIDXOWWBcsUltiS12eLEe35NofjmVjKGajSXOF9iFJ17SZY2qhwEhMhACDbHpYZ1A==;
-COSMOSDB_DATABASE=scctukanocosmos70068
+COSMOSDB_DATABASE_NAME=Tukano
+
