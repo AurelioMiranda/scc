@@ -17,13 +17,11 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import redis.clients.jedis.Jedis;
 import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.Shorts;
 import tukano.api.User;
-import tukano.cache.RedisCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
@@ -57,16 +55,6 @@ public class JavaShorts implements Shorts {
 			var shrt = new Short(shortId, userId, blobUrl);
 			shrt.setId(shortId);
 
-			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				var key = "short:" + shortId;
-				var value = JSON.encode(shrt);
-				jedis.set(key, value);
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-
-				var cnt = jedis.incr(RedisCache.NUM_SHORTS_COUNTER);
-				Log.info("Total shorts: " + cnt);
-			}
-
 			return CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt);
 			// return errorOrValue(
 			// CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
@@ -80,17 +68,6 @@ public class JavaShorts implements Shorts {
 
 		if (shortId == null)
 			return error(BAD_REQUEST);
-
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "short:" + shortId;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-				var short1 = JSON.decode(val, Short.class);
-				return Result.ok(short1);
-			}
-		}
 
 		// var query = format("SELECT VALUE COUNT(1) FROM Likes l WHERE l.shortId =
 		// '%s'", shortId);
@@ -106,15 +83,6 @@ public class JavaShorts implements Shorts {
 	@Override
 	public Result<Void> deleteShort(String shortId, String password) {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
-    
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "short:" + shortId;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.del(key);
-			}
-		}
 
 		return errorOrResult(getShort(shortId), shrt -> {
 			return errorOrResult(okUser(shrt.getOwnerId(), password), user -> {
@@ -133,8 +101,6 @@ public class JavaShorts implements Shorts {
 	@Override
 	public Result<List<String>> getShorts(String userId) {
 		Log.info(() -> format("getShorts : userId = %s\n", userId));
-
-		// cache for search?
 
 		var query = format("SELECT s.shortId FROM Short s WHERE s.ownerId = '%s'", userId);
 		Result<List<Short>> shortIdResults = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS,
@@ -211,17 +177,6 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("getFeed : userId = %s, pwd = %s\n", userId, password));
 		String key = "feed :" + userId;
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var cachedFeed = jedis.get(key);
-			if (cachedFeed != null) {
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-				List<String> feed = Arrays
-						.asList(cachedFeed.replace("[", "")
-								.replace("]", "").replace("\"", "").split(","));
-				return Result.ok(feed);
-			}
-		}
-
 		final var QUERY_FMT = """
 				SELECT s.shortId, s.timestamp FROM Short s WHERE	s.ownerId = '%s'
 				UNION
@@ -231,15 +186,6 @@ public class JavaShorts implements Shorts {
 				ORDER BY s.timestamp DESC""";
 		var queryResult = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class,
 				format(QUERY_FMT, userId, userId));
-
-		if (queryResult.isOK()) {
-			List<String> feed = queryResult.value();
-			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				jedis.set(key, JSON.encode(feed));
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-			}
-			return Result.ok(feed);
-		}
 
 		return queryResult;
 	}

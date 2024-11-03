@@ -13,11 +13,9 @@ import static tukano.api.Result.ErrorCode.NOT_FOUND;
 import java.util.List;
 import java.util.logging.Logger;
 
-import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
-import tukano.cache.RedisCache;
 import tukano.db.CosmosDBLayer;
 import utils.DB;
 import utils.JSON;
@@ -43,16 +41,6 @@ public class JavaUsers implements Users {
 
 		if (badUserInfo(user))
 			return error(BAD_REQUEST);
-
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "user:" + user.getUserId();
-			var value = JSON.encode(user);
-			jedis.set(key, value);
-			jedis.expire(key, RedisCache.ALIVE_TIME);
-			var cnt = jedis.incr(RedisCache.NUM_USERS_COUNTER);
-			Log.info("Total users: " + cnt);
-		}
-
 		return Result.errorOrValue(
 				CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_USERS, user),
 				user.getUserId());
@@ -66,17 +54,6 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 		}
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "user:" + userId;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-				var user = JSON.decode(val, User.class);
-				return validatedUserOrError(ok(user), pwd);
-			}
-		}
-
 		return errorOrResult(
 				CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class),
 				user -> validatedUserOrError(Result.ok(user), pwd));
@@ -88,16 +65,6 @@ public class JavaUsers implements Users {
 
 		if (badUpdateUserInfo(userId, pwd, other))
 			return error(BAD_REQUEST);
-
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "user:" + userId;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-				jedis.set(key, JSON.encode(other));
-			}
-		}
 
 		return errorOrResult(
 				validatedUserOrError(
@@ -115,15 +82,6 @@ public class JavaUsers implements Users {
 		if (userId == null || pwd == null)
 			return error(BAD_REQUEST);
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "user:" + userId;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.del(key);
-			}
-		}
-
 		return errorOrResult(
 				validatedUserOrError(
 						CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class), pwd),
@@ -139,8 +97,6 @@ public class JavaUsers implements Users {
 			return Result.error(BAD_REQUEST);
 		}
 		Log.info(() -> format("searchUsers : pattern = %s\n", pattern));
-
-		// cache for search?
 
 		var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
 		var hits = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_USERS, User.class, query);
