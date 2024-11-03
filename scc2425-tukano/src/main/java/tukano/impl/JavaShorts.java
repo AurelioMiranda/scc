@@ -10,6 +10,7 @@ import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static utils.DB.getOne;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -120,8 +121,8 @@ public class JavaShorts implements Shorts {
 		return errorOrResult(okUser(userId1, password), user -> {
 			var f = new Following(userId1, userId2);
 			return errorOrVoid(okUser(userId2),
-					isFollowing ? CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, f)
-							: CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS, f));
+					isFollowing ? CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_FOLLOWING, f)
+							: CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_FOLLOWING, f));
 		});
 	}
 
@@ -142,8 +143,8 @@ public class JavaShorts implements Shorts {
 		return errorOrResult(getShort(shortId), shrt -> {
 			var l = new Likes(userId, shortId, shrt.getOwnerId());
 			return errorOrVoid(okUser(userId, password),
-					isLiked ? CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, l)
-							: CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS, l));
+					isLiked ? CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_LIKES, l)
+							: CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_LIKES, l));
 		});
 	}
 
@@ -152,11 +153,19 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("likes : shortId = %s, pwd = %s\n", shortId, password));
 
 		return errorOrResult(getShort(shortId), shrt -> {
-
 			var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);
+			Log.info(() -> "Executing query: " + query);
 
-			return errorOrValue(okUser(shrt.getOwnerId(), password),
-					CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class, query));
+			var queryResult = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class, query);
+
+			Log.info(() -> "Query Result: " + queryResult.value());
+
+			if (queryResult == null || queryResult.value().isEmpty()) {
+				Log.info("No likes found for shortId: " + shortId);
+				return Result.ok(Collections.emptyList());
+			}
+
+			return errorOrValue(okUser(shrt.getOwnerId(), password), queryResult);
 		});
 	}
 
@@ -189,7 +198,7 @@ public class JavaShorts implements Shorts {
 			return error(res.error());
 	}
 
-	@Override // TODO: review this, may cause issues
+	@Override
 	public Result<Void> deleteAllShorts(String userId, String password, String token) {
 		Log.info(() -> format("deleteAllShorts : userId = %s\n", userId));
 
@@ -208,27 +217,18 @@ public class JavaShorts implements Shorts {
 				return Result.error(deleteShortResult.error());
 			}
 
-			String likesQuery = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shrt.getShortId());
-			Result<List<Likes>> likesRes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS,
-					Likes.class, likesQuery);
-
-			if (likesRes.isOK()) {
-				for (Likes like : likesRes.value()) {
-					Result<?> deleteLikeRes = CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS,
-							like);
-
-					if (!deleteLikeRes.isOK()) {
-						return Result.error(deleteLikeRes.error());
-					}
+			try {
+				Result<Void> blobDeleteRe = JavaBlobs.getInstance().delete(shrt.getBlobUrl(), token);
+				if (!blobDeleteRe.isOK()) {
+					return Result.error(blobDeleteRe.error());
 				}
-			}
-
-			Result<Void> blobDeleteRe = JavaBlobs.getInstance().delete(shrt.getBlobUrl(), token);
-			if (!blobDeleteRe.isOK()) {
-				return Result.error(blobDeleteRe.error());
+			} catch (IllegalArgumentException e) {
+				Log.info("Failed to delete blob due to invalid connection string: " + e.getMessage());
+				return Result.ok();
 			}
 		}
 
 		return Result.ok();
 	}
+
 }

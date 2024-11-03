@@ -25,6 +25,8 @@ public class CosmosDBLayer {
 	private static final String DB_NAME = "Tukano"; // USER db name
 	public static final String CONTAINER_USERS = "Users";
 	public static final String CONTAINER_SHORTS = "Shorts";
+	public static final String CONTAINER_FOLLOWING = "Following";
+	public static final String CONTAINER_LIKES = "Likes";
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static CosmosDBLayer instance;
@@ -78,8 +80,6 @@ public class CosmosDBLayer {
 	}
 
 	public <T> Result<T> insertOne(String containerName, T obj) {
-		Log.info("#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$##\n");
-		Log.info(obj.toString());
 		return tryCatch(() -> getContainer(containerName).createItem(obj).getItem());
 	}
 
