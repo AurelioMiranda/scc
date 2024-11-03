@@ -13,6 +13,7 @@ import static utils.DB.getOne;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import tukano.api.Blobs;
 import tukano.api.Result;
@@ -49,10 +50,12 @@ public class JavaShorts implements Shorts {
 			var shortId = format("%s+%s", userId, UUID.randomUUID());
 			var blobUrl = format("%s/%s/%s", TukanoRestServer.serverURI, Blobs.NAME, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
+			shrt.setId(shortId);
 
-			return errorOrValue(
-					CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
-					s -> s.copyWithLikes_And_Token(0));
+			return CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt);
+			// return errorOrValue(
+			// CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
+			// s -> s.copyWithLikes_And_Token(0));
 		});
 	}
 
@@ -63,17 +66,20 @@ public class JavaShorts implements Shorts {
 		if (shortId == null)
 			return error(BAD_REQUEST);
 
-		var query = format("SELECT VALUE COUNT(1) FROM Likes l WHERE l.shortId = '%s'", shortId);
-		var likes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, Long.class, query).value();
-		return errorOrValue(
-				CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId, Short.class),
-				shrt -> (Short) shrt.copyWithLikes_And_Token(likes.get(0)));
+		// var query = format("SELECT VALUE COUNT(1) FROM Likes l WHERE l.shortId =
+		// '%s'", shortId);
+		// var likes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS,
+		// Long.class, query).value();
+		return CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId, Short.class);
+		// return errorOrValue(
+		// CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId,
+		// Short.class),
+		// shrt -> (Short) shrt.copyWithLikes_And_Token(likes.get(0)));
 	}
 
 	@Override
 	public Result<Void> deleteShort(String shortId, String password) {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
-		// TODO: review this, became more complex that i anticipated
 		return errorOrResult(getShort(shortId), shrt -> {
 			return errorOrResult(okUser(shrt.getOwnerId(), password), user -> {
 				Result<?> deleteShortResult = CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS,
@@ -83,17 +89,7 @@ public class JavaShorts implements Shorts {
 					return Result.error(deleteShortResult.error());
 				}
 
-				String query = format("DELETE FROM Likes l WHERE l.shortId = '%s'", shortId);
-				Result<List<Likes>> deleteLikesResult = CosmosDBLayer.getInstance()
-						.query(CosmosDBLayer.CONTAINER_SHORTS, Likes.class, query);
-
-				if (!deleteLikesResult.isOK()) {
-					return Result.error(deleteLikesResult.error());
-				}
-
-				Result<Void> blobDeleteResult = JavaBlobs.getInstance().delete(shrt.getBlobUrl(), Token.get());
-
-				return blobDeleteResult.isOK() ? Result.ok() : Result.error(blobDeleteResult.error());
+				return Result.ok();
 			});
 		});
 	}
@@ -103,8 +99,17 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("getShorts : userId = %s\n", userId));
 
 		var query = format("SELECT s.shortId FROM Short s WHERE s.ownerId = '%s'", userId);
-		return errorOrValue(okUser(userId),
-				CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class, query));
+		Result<List<Short>> shortIdResults = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS,
+				Short.class, query);
+
+		if (shortIdResults.isOK()) {
+			List<String> shortIds = shortIdResults.value().stream()
+					.map(Short::getShortId)
+					.collect(Collectors.toList());
+			return ok(shortIds);
+		} else {
+			return error(shortIdResults.error());
+		}
 	}
 
 	@Override
