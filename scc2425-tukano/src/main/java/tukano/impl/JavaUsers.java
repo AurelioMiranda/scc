@@ -40,7 +40,7 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 
 		return Result.errorOrValue(
-				CosmosDBLayer.getInstance().insertOne(user),
+				CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_USERS, user),
 				user.getUserId());
 	}
 
@@ -53,7 +53,7 @@ public class JavaUsers implements Users {
 		}
 
 		return errorOrResult(
-				CosmosDBLayer.getInstance().getOne(userId, User.class),
+				CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class),
 				user -> validatedUserOrError(Result.ok(user), pwd));
 	}
 
@@ -65,10 +65,11 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 
 		return errorOrResult(
-				validatedUserOrError(CosmosDBLayer.getInstance().getOne(userId, User.class), pwd),
+				validatedUserOrError(
+						CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class), pwd),
 				user -> {
 					user.updateFrom(other);
-					return CosmosDBLayer.getInstance().updateOne(user);
+					return CosmosDBLayer.getInstance().updateOne(CosmosDBLayer.CONTAINER_USERS, user);
 				});
 	}
 
@@ -80,9 +81,10 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 
 		return errorOrResult(
-				validatedUserOrError(CosmosDBLayer.getInstance().getOne(userId, User.class), pwd),
+				validatedUserOrError(
+						CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class), pwd),
 				user -> {
-					var deletedUser = CosmosDBLayer.getInstance().deleteOne(user);
+					var deletedUser = CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_USERS, user);
 					return deletedUser.isOK() ? ok(user) : error(NOT_FOUND);
 				});
 	}
@@ -95,7 +97,7 @@ public class JavaUsers implements Users {
 		Log.info(() -> format("searchUsers : pattern = %s\n", pattern));
 
 		var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
-		var hits = CosmosDBLayer.getInstance().query(User.class, query);
+		var hits = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_USERS, User.class, query);
 		List<User> users = hits.value().stream()
 				.map(User::copyWithoutPassword)
 				.toList();

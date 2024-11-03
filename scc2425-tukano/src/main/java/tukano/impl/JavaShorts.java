@@ -51,7 +51,7 @@ public class JavaShorts implements Shorts {
 			var shrt = new Short(shortId, userId, blobUrl);
 
 			return errorOrValue(
-					CosmosDBLayer.getInstance().insertOne(shrt),
+					CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
 					s -> s.copyWithLikes_And_Token(0));
 		});
 	}
@@ -64,9 +64,9 @@ public class JavaShorts implements Shorts {
 			return error(BAD_REQUEST);
 
 		var query = format("SELECT VALUE COUNT(1) FROM Likes l WHERE l.shortId = '%s'", shortId);
-		var likes = CosmosDBLayer.getInstance().query(Long.class, query).value();
+		var likes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, Long.class, query).value();
 		return errorOrValue(
-				CosmosDBLayer.getInstance().getOne(shortId, Short.class),
+				CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId, Short.class),
 				shrt -> (Short) shrt.copyWithLikes_And_Token(likes.get(0)));
 	}
 
@@ -76,14 +76,16 @@ public class JavaShorts implements Shorts {
 		// TODO: review this, became more complex that i anticipated
 		return errorOrResult(getShort(shortId), shrt -> {
 			return errorOrResult(okUser(shrt.getOwnerId(), password), user -> {
-				Result<?> deleteShortResult = CosmosDBLayer.getInstance().deleteOne(shrt);
+				Result<?> deleteShortResult = CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS,
+						shrt);
 
 				if (!deleteShortResult.isOK()) {
 					return Result.error(deleteShortResult.error());
 				}
 
 				String query = format("DELETE FROM Likes l WHERE l.shortId = '%s'", shortId);
-				Result<List<Likes>> deleteLikesResult = CosmosDBLayer.getInstance().query(Likes.class, query);
+				Result<List<Likes>> deleteLikesResult = CosmosDBLayer.getInstance()
+						.query(CosmosDBLayer.CONTAINER_SHORTS, Likes.class, query);
 
 				if (!deleteLikesResult.isOK()) {
 					return Result.error(deleteLikesResult.error());
@@ -101,7 +103,8 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("getShorts : userId = %s\n", userId));
 
 		var query = format("SELECT s.shortId FROM Short s WHERE s.ownerId = '%s'", userId);
-		return errorOrValue(okUser(userId), CosmosDBLayer.getInstance().query(String.class, query));
+		return errorOrValue(okUser(userId),
+				CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class, query));
 	}
 
 	@Override
@@ -111,8 +114,9 @@ public class JavaShorts implements Shorts {
 
 		return errorOrResult(okUser(userId1, password), user -> {
 			var f = new Following(userId1, userId2);
-			return errorOrVoid(okUser(userId2), isFollowing ? CosmosDBLayer.getInstance().insertOne(f)
-					: CosmosDBLayer.getInstance().deleteOne(f));
+			return errorOrVoid(okUser(userId2),
+					isFollowing ? CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, f)
+							: CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS, f));
 		});
 	}
 
@@ -121,7 +125,8 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("followers : userId = %s, pwd = %s\n", userId, password));
 
 		var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);
-		return errorOrValue(okUser(userId, password), CosmosDBLayer.getInstance().query(String.class, query));
+		return errorOrValue(okUser(userId, password),
+				CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class, query));
 	}
 
 	@Override
@@ -131,8 +136,9 @@ public class JavaShorts implements Shorts {
 
 		return errorOrResult(getShort(shortId), shrt -> {
 			var l = new Likes(userId, shortId, shrt.getOwnerId());
-			return errorOrVoid(okUser(userId, password), isLiked ? CosmosDBLayer.getInstance().insertOne(l)
-					: CosmosDBLayer.getInstance().deleteOne(l));
+			return errorOrVoid(okUser(userId, password),
+					isLiked ? CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, l)
+							: CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS, l));
 		});
 	}
 
@@ -145,7 +151,7 @@ public class JavaShorts implements Shorts {
 			var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);
 
 			return errorOrValue(okUser(shrt.getOwnerId(), password),
-					CosmosDBLayer.getInstance().query(String.class, query));
+					CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class, query));
 		});
 	}
 
@@ -162,7 +168,8 @@ public class JavaShorts implements Shorts {
 				ORDER BY s.timestamp DESC""";
 
 		return errorOrValue(okUser(userId, password),
-				CosmosDBLayer.getInstance().query(String.class, format(QUERY_FMT, userId, userId)));
+				CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, String.class,
+						format(QUERY_FMT, userId, userId)));
 	}
 
 	protected Result<User> okUser(String userId, String pwd) {
@@ -182,25 +189,28 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("deleteAllShorts : userId = %s\n", userId));
 
 		String query = format("SELECT * FROM c WHERE c.ownerId = '%s'", userId);
-		Result<List<Short>> shortsRes = CosmosDBLayer.getInstance().query(Short.class, query);
+		Result<List<Short>> shortsRes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS, Short.class,
+				query);
 
 		if (!shortsRes.isOK()) {
 			return Result.error(shortsRes.error());
 		}
 
 		for (Short shrt : shortsRes.value()) {
-			Result<?> deleteShortResult = CosmosDBLayer.getInstance().deleteOne(shrt);
+			Result<?> deleteShortResult = CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS, shrt);
 
 			if (!deleteShortResult.isOK()) {
 				return Result.error(deleteShortResult.error());
 			}
 
 			String likesQuery = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shrt.getShortId());
-			Result<List<Likes>> likesRes = CosmosDBLayer.getInstance().query(Likes.class, likesQuery);
+			Result<List<Likes>> likesRes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS,
+					Likes.class, likesQuery);
 
 			if (likesRes.isOK()) {
 				for (Likes like : likesRes.value()) {
-					Result<?> deleteLikeRes = CosmosDBLayer.getInstance().deleteOne(like);
+					Result<?> deleteLikeRes = CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_SHORTS,
+							like);
 
 					if (!deleteLikeRes.isOK()) {
 						return Result.error(deleteLikeRes.error());
