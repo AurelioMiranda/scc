@@ -13,9 +13,11 @@ import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
+import java.util.logging.Logger;
 
 import tukano.api.Result;
-import tukano.api.Result.ErrorCode;;
+import tukano.api.Result.ErrorCode;
+import tukano.impl.JavaUsers;;
 
 public class CosmosDBLayer {
 	private static final String CONNECTION_URL = "https://scctukanocosmos70068.documents.azure.com:443/";
@@ -23,6 +25,7 @@ public class CosmosDBLayer {
 	private static final String DB_NAME = "Tukano"; // USER db name
 	public static final String CONTAINER_USERS = "Users";
 	public static final String CONTAINER_SHORTS = "Shorts";
+	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static CosmosDBLayer instance;
 
@@ -75,6 +78,8 @@ public class CosmosDBLayer {
 	}
 
 	public <T> Result<T> insertOne(String containerName, T obj) {
+		Log.info("#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$##\n");
+		Log.info(obj.toString());
 		return tryCatch(() -> getContainer(containerName).createItem(obj).getItem());
 	}
 
@@ -86,6 +91,7 @@ public class CosmosDBLayer {
 	}
 
 	private CosmosContainer getContainer(String containerName) {
+		init();
 		return db.getContainer(containerName);
 	}
 
