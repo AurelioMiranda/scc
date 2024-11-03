@@ -17,7 +17,7 @@ import utils.Props;
 
 public class FilesystemStorage implements BlobStorage{
     //private static final String BLOBS_CONTAINER_NAME = Props.get("BLOB_CONTAINER_SHORTS", "Shorts");
-    private static final String BLOBS_CONTAINER_NAME = "Shorts";
+    private static final String BLOBS_CONTAINER_NAME = "shorts";
     //private static final String BLOBS_CONTAINER_CONNECTION_STRING = Props.get("STORAGE_ACCOUNT_CONNECTION", "default");
     private static final String BLOBS_CONTAINER_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=scctukano70068;AccountKey=3HbFmeMeRintQiY47zzBdY/bWc/s2SvvzA9h+fClVf92W0c0E3QQ8GP/ve433Jozp2tQ0WGtrpSv+ASt3kZN0A==;EndpointSuffix=core.windows.net";
     private final BlobContainerClient containerClient;
