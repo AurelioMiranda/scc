@@ -1,33 +1,40 @@
 package tukano.api;
 
+import org.hsqldb.persist.Log;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import tukano.impl.Token;
+import utils.Hash;
 
 /**
  * Represents a Short video uploaded by an user.
  * 
- * A short has an unique shortId and is owned by a given user; 
+ * A short has an unique shortId and is owned by a given user;
  * Comprises of a short video, stored as a binary blob at some bloburl;.
- * A post also has a number of likes, which can increase or decrease over time. It is the only piece of information that is mutable.
+ * A post also has a number of likes, which can increase or decrease over time.
+ * It is the only piece of information that is mutable.
  * A short is timestamped when it is created.
  *
  */
 @Entity
 public class Short {
-	
+
 	@Id
 	String shortId;
+	String id;
 	String ownerId;
 	String blobUrl;
 	long timestamp;
 	int totalLikes;
 
-	public Short() {}
-	
+	public Short() {
+	}
+
 	public Short(String shortId, String ownerId, String blobUrl, long timestamp, int totalLikes) {
 		super();
 		this.shortId = shortId;
+		this.id = shortId;
 		this.ownerId = ownerId;
 		this.blobUrl = blobUrl;
 		this.timestamp = timestamp;
@@ -35,15 +42,23 @@ public class Short {
 	}
 
 	public Short(String shortId, String ownerId, String blobUrl) {
-		this( shortId, ownerId, blobUrl, System.currentTimeMillis(), 0);
+		this(shortId, ownerId, blobUrl, System.currentTimeMillis(), 0);
 	}
-	
+
 	public String getShortId() {
 		return shortId;
 	}
 
+	public String getId() {
+		return id;
+	}
+
 	public void setShortId(String shortId) {
 		this.shortId = shortId;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	public String getOwnerId() {
