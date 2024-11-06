@@ -16,29 +16,19 @@ config:
             - "pwd"
             - "email"
             - "displayName"
+
 scenarios:
-    - name: Post users and respective shorts
+    - name: Update user
       flow:
-        - post:
-            url: /users/
+        - put:
+            url: "/users/{{ userId }}?userId={{ userId }}&pwd={{ pwd }}"
             headers:
                 Content-Type: application/json
             json:
-                userId: "{{ userId }}" # this parameter is filled from the fields above
+                userId: "{{ userId }}"
                 pwd: "{{ pwd }}"
-                email: "{{ email }}"
                 displayName: "{{ displayName }}"
-        - post:
-            url: "/shorts/{{ userId }}?pwd={{ pwd }}"
-            headers:
-                Content-Type: application/json
-    - name: Post a blob
-      flow:
-        - post:
-            url: "/blobs/mark+25cfbff3-8abc-4bbd-8b45-045868d39adf?Content-Type=application/octet-stream"
-            headers:
-                Content-Type: application/octet-stream
-            bodyFile: "./data/short.png"
+                email: "{{ email }}"
       phases:
         - duration: 1
-          arrivalRate: 1 # Ensures it only sends once
+          arrivalRate: 1
