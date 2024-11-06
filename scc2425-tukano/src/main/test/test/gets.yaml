@@ -1,0 +1,46 @@
+config:
+    target: http://127.0.0.1:8080/tukano/rest
+    phases:
+        - name: simple_post
+          duration: 1
+          arrivalRate: 3
+    payload:
+        path: ./data/users.csv
+        order: sequence
+        skipHeader: true
+        delimiter: ","
+        skipEmptyLines: true
+        fields:
+            - "userId"
+            - "pwd"
+            - "email"
+            - "displayName"
+
+scenarios:
+    - name: get users from csv
+      flow:
+        - get:
+            url: "/users/{{ userId }}?userId={{ userId }}&pwd={{ pwd }}"
+            headers:
+                Content-Type: application/json
+      phases:
+        - duration: 1
+          arrivalRate: 1
+
+    - name: All gets
+      flow:
+        - get:
+            url: /users/ag?pwd=1234
+        - get:
+            url: http://localhost:8080/tukano/rest/users?query=r
+        - get:
+            url: http://127.0.0.1:8080/tukano/rest/shorts/mark+25cfbff3-8abc-4bbd-8b45-045868d39adf
+        - get:
+            url: http://127.0.0.1:8080/tukano/rest/shorts/mark/shorts?userId=mark
+        - get:
+            url: http://localhost:8080/tukano/rest/shorts/mark+25cfbff3-8abc-4bbd-8b45-045868d39adf/likes?pwd=1234
+        - get:
+            url: http://localhost:8080/tukano/rest/blobs/jleo+75a37a10-bf63-4470-a664-db6195a92b5e?Content-Type=application/octet-stream
+      phases:
+        - duration: 1
+          arrivalRate: 1

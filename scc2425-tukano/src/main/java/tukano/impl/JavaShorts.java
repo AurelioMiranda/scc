@@ -67,10 +67,9 @@ public class JavaShorts implements Shorts {
 				Log.info("Total shorts: " + cnt);
 			}
 
-			return CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt);
-			// return errorOrValue(
-			// CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
-			// s -> s.copyWithLikes_And_Token(0));
+			return errorOrValue(
+					CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
+					s -> s.copyWithLikes_And_Token(0));
 		});
 	}
 
@@ -92,21 +91,19 @@ public class JavaShorts implements Shorts {
 			}
 		}
 
-		// var query = format("SELECT VALUE COUNT(1) FROM Likes l WHERE l.shortId =
-		// '%s'", shortId);
-		// var likes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS,
-		// Long.class, query).value();
-		return CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId, Short.class);
-		// return errorOrValue(
-		// CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId,
-		// Short.class),
-		// shrt -> (Short) shrt.copyWithLikes_And_Token(likes.get(0)));
+		var query = format("SELECT VALUE COUNT(1) FROM Likes l WHERE l.shortId = '%s'", shortId);
+		var likes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_LIKES, Long.class, query).value();
+
+		return errorOrValue(
+				CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId,
+						Short.class),
+				shrt -> (Short) shrt.copyWithLikes_And_Token(likes.get(0)));
 	}
 
 	@Override
 	public Result<Void> deleteShort(String shortId, String password) {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
-    
+
 		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 			var key = "short:" + shortId;
 			var val = jedis.get(key);

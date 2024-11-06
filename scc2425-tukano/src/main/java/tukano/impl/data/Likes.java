@@ -1,19 +1,22 @@
 package tukano.impl.data;
 
 import java.util.Objects;
+import java.util.Random;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
 @Entity
 public class Likes {
-	
-	@Id 
+
+	@Id
 	String userId;
-	
-	@Id 
+
+	@Id
 	String shortId;
-	
+
+	private String id;
+
 	public String getOwnerId() {
 		return ownerId;
 	}
@@ -23,13 +26,26 @@ public class Likes {
 	}
 
 	String ownerId;
-	
-	public Likes() {}
+
+	public Likes() {
+	}
 
 	public Likes(String userId, String shortId, String ownerId) {
 		this.userId = userId;
 		this.shortId = shortId;
 		this.ownerId = ownerId;
+		
+		Random rand = new Random();
+		int n = rand.nextInt(1000);
+		this.id = userId + shortId + n;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	public String getUserId() {
@@ -70,6 +86,5 @@ public class Likes {
 		return Objects.equals(ownerId, other.ownerId) && Objects.equals(shortId, other.shortId)
 				&& Objects.equals(userId, other.userId);
 	}
-	
-	
+
 }

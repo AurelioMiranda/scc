@@ -28,6 +28,7 @@ public class TukanoRestServer extends Application {
 
 	public TukanoRestServer() {
 		serverURI = String.format(SERVER_BASE_URI, IP.hostname(), PORT);
+		Token.setSecret(Args.valueOf("-secret", ""));
 		loadResources();
 		Props.loadProps("azurekeys-region.props");
 	}
@@ -53,7 +54,6 @@ public class TukanoRestServer extends Application {
 		Props.loadProps("azurekeys-region.props");
 		Log.info("###################################################################################################################");
 		Log.info(Props.get("BLOB_CONTAINER_NAME", "not workingz"));
-		Token.setSecret(Args.valueOf("-secret", ""));
 		// Props.load( Args.valueOf("-props", "").split(","));
 		new TukanoRestServer().start();
 	}

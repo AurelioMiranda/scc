@@ -1,6 +1,7 @@
 package tukano.impl.data;
 
 import java.util.Objects;
+import java.util.Random;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,12 +15,26 @@ public class Following{
 	@Id 
 	String followee;
 
+	private String id;
+
 	Following() {}
 
 	public Following(String follower, String followee) {
 		super();
 		this.follower = follower;
 		this.followee = followee;
+
+		Random rand = new Random();
+		int n = rand.nextInt(1000);
+		this.id = followee + follower + n;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	public String getFollower() {
