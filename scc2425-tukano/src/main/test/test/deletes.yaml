@@ -1,0 +1,41 @@
+config:
+    target: http://127.0.0.1:8080/tukano/rest
+    phases:
+        - name: simple_post
+          duration: 1
+          arrivalRate: 3
+    payload:
+        path: ./data/users.csv
+        order: sequence
+        skipHeader: true
+        delimiter: ","
+        skipEmptyLines: true
+        fields:
+            - "userId"
+            - "pwd"
+            - "email"
+            - "displayName"
+scenarios:
+    - name: Delete users and shorts
+      flow:
+        - delete:
+            url: "/users/{{ userId }}"
+            headers:
+                Content-Type: application/json
+        - delete:
+            url: "/shorts/{{ userId }}?pwd={{ pwd }}"
+            headers:
+                Content-Type: application/json
+      phases:
+        - duration: 1
+          arrivalRate: 1
+
+    - name: Delete blob
+      flow:
+        - delete:
+            url: "/blobs/mark+25cfbff3-8abc-4bbd-8b45-045868d39adf"
+            headers:
+                Content-Type: application/octet-stream
+      phases:
+        - duration: 1
+          arrivalRate: 1
