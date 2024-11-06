@@ -17,6 +17,7 @@ import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
 import tukano.db.CosmosDBLayer;
+import tukano.db.PostgreSQLLayer;
 import utils.DB;
 import utils.JSON;
 
@@ -42,8 +43,9 @@ public class JavaUsers implements Users {
 		if (badUserInfo(user))
 			return error(BAD_REQUEST);
 		return Result.errorOrValue(
-				CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_USERS, user),
+				PostgreSQLLayer.getInstance().insertOne("users", user),
 				user.getUserId());
+		
 	}
 
 	@Override

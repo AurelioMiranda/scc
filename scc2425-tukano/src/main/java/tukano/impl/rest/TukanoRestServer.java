@@ -30,6 +30,7 @@ public class TukanoRestServer extends Application {
 		serverURI = String.format(SERVER_BASE_URI, IP.hostname(), PORT);
 		loadResources();
 		Props.loadProps("azurekeys-region.props");
+		Token.setSecret(Args.valueOf("-secret", ""));
 	}
 
 	private void loadResources() {

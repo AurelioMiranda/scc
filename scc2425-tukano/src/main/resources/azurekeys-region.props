@@ -1,3 +1,5 @@
+# THIS VERSION HAS POSTGRESQL IMPLEMENTATION
+
 # Storage Account Secrets
 # Blobs and Containers
 STORAGE_ACCOUNT_CONNECTION=DefaultEndpointsProtocol=https;AccountName=scctukano70068;AccountKey=3HbFmeMeRintQiY47zzBdY/bWc/s2SvvzA9h+fClVf92W0c0E3QQ8GP/ve433Jozp2tQ0WGtrpSv+ASt3kZN0A==;EndpointSuffix=core.windows.net
@@ -6,8 +8,14 @@ STORAGE_ACCOUNT_NAME=scctukano70068
 BLOB_CONTAINER_NAME=shorts
 
 # Cosmo DB Secrets
-COSMOSDB_URL=https://scctukanocosmos70068.documents.azure.com:443/
-COSMOSDB_KEY=VByJA8a4Jp8QrnhLaVDhkHIDXOWWBcsUltiS12eLEe35NofjmVjKGajSXOF9iFJ17SZY2qhwEhMhACDbHpYZ1A==
-COSMOSDB_CONNECTION=AccountEndpoint=https://scctukanocosmos70068.documents.azure.com:443/;AccountKey=VByJA8a4Jp8QrnhLaVDhkHIDXOWWBcsUltiS12eLEe35NofjmVjKGajSXOF9iFJ17SZY2qhwEhMhACDbHpYZ1A==;
+POSTGRE_URL=jdbc:postgresql://c-scc-tukano-postgresqk-70068.fientyiqa2kzrw.postgres.cosmos.azure.com:5432/tukano?user=citus&password=abcde12345!&sslmode=require
+POSTGRE_USER=citus
+POSTGRE_PASS=abcde12345!
+
 COSMOSDB_DATABASE_NAME=Tukano
 
+    private static final String DB_URL = Props.get("DB_URL", "");
+    private static final String DB_USER = Props.get("DB_USER", "");
+    private static final String DB_PASSWORD = Props.get("DB_PASSWORD", "");
+    private static final String DB_TABLE_NAME = "blobs";  // You can define a table for storing blobs
+    private static final String DB_CONNECTION_STRING = Props.get("DB_CONNECTION", "");
