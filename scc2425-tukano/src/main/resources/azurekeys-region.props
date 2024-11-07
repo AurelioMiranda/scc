@@ -13,9 +13,3 @@ POSTGRE_USER=citus
 POSTGRE_PASS=abcde12345!
 
 COSMOSDB_DATABASE_NAME=Tukano
-
-    private static final String DB_URL = Props.get("DB_URL", "");
-    private static final String DB_USER = Props.get("DB_USER", "");
-    private static final String DB_PASSWORD = Props.get("DB_PASSWORD", "");
-    private static final String DB_TABLE_NAME = "blobs";  // You can define a table for storing blobs
-    private static final String DB_CONNECTION_STRING = Props.get("DB_CONNECTION", "");
