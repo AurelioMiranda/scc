@@ -112,45 +112,80 @@ public class PostgreSQLLayer {
     }
 
     //TODO Rest of CRUD operations
-    //Missing Search All
+    //Missing: searchAll, 
     
     public <T> Result<T> getOne(String tableName, String id, Class<T> clazz){
-         String getQuery = "SELECT id, userId, pwd, email, displayName FROM " + tableName + " WHERE id = ?";
+        if(clazz == User.class){
+            String getQuery = "SELECT id, userId, pwd, email, displayName FROM " + tableName + " WHERE id = ?";
 
-        try (PreparedStatement statement = connection.prepareStatement(getQuery)) {
-            // Set the id parameter on getQuery
-            statement.setString(1, id);
-            
-            // Execute the query and get the result set object
-            try (ResultSet resultSet = statement.executeQuery()) {
-                // Check if a result was returned
-                if (resultSet.next()) {
-                    // Retrieve the data
-                    User user = new User();
-                    user.setUserId(resultSet.getString("userId"));
-                    user.setId(resultSet.getString("id"));
-                    user.setPwd(resultSet.getString("pwd"));
-                    user.setEmail(resultSet.getString("email"));
-                    user.setDisplayName(resultSet.getString("displayName"));
-    
-                    return (Result<T>) Result.ok(user);
-                } else {
-                    // If no user is found, return error code
-                    return Result.error(Result.ErrorCode.NOT_FOUND);
+            try (PreparedStatement statement = connection.prepareStatement(getQuery)) {
+                // Set the id parameter on getQuery
+                statement.setString(1, id);
+                
+                // Execute the query and get the result set object
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    // Check if a result was returned
+                    if (resultSet.next()) {
+                        // Retrieve the data
+                        User user = new User();
+                        user.setUserId(resultSet.getString("userId"));
+                        user.setId(resultSet.getString("id"));
+                        user.setPwd(resultSet.getString("pwd"));
+                        user.setEmail(resultSet.getString("email"));
+                        user.setDisplayName(resultSet.getString("displayName"));
+        
+                        return (Result<T>) Result.ok(user);
+                    } else {
+                        // If no user is found, return error code
+                        return Result.error(Result.ErrorCode.NOT_FOUND);
+                    }
                 }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+            } catch (SQLException e) {
+                e.printStackTrace();
 
-            return Result.error(Result.ErrorCode.CONFLICT);
+                return Result.error(Result.ErrorCode.CONFLICT);
+            }
         }
+
+        if(clazz == Short.class){
+            String getQuery = "SELECT * FROM " + tableName + " WHERE id = ?";
+
+            try (PreparedStatement statement = connection.prepareStatement(getQuery)) {
+                // Set the id parameter on getQuery
+                statement.setString(1, id);
+                
+                // Execute the query and get the result set object
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    // Check if a result was returned
+                    if (resultSet.next()) {
+                        // Retrieve the data
+                        Short st = new Short();
+                        st.setId(resultSet.getString("id"));
+                        st.setShortId(resultSet.getString("shortId"));
+                        st.setOwnerId(resultSet.getString("ownerId"));
+                        st.setTimestamp(resultSet.getLong("timestamp"));
+                        st.setBlobUrl(resultSet.getString("blobUrl"));
+                        st.setTotalLikes(resultSet.getInt("totalLikes"));
+        
+                        return (Result<T>) Result.ok(st);
+                    } else {
+                        // If no short is found, return error code
+                        return Result.error(Result.ErrorCode.NOT_FOUND);
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+
+                return Result.error(Result.ErrorCode.CONFLICT);
+            }
+        }
+
+        return Result.error(Result.ErrorCode.INTERNAL_ERROR);
     }
 
     // Passes all validation but doesn't update the row in postgre for some reason
     public <T> Result<T> updateOne(String tableName, T obj) {
-        if(obj instanceof User){
-            User user = (User) obj;
-
+        if(obj instanceof User user){
             String updateQuery = "UPDATE " + tableName + " SET pwd = ?, email = ?, displayName = ? WHERE id = ?";
             try(PreparedStatement statement = connection.prepareStatement(updateQuery)){
                 // Set the update data
@@ -180,12 +215,31 @@ public class PostgreSQLLayer {
     }
 
     public <T> Result<?> deleteOne(String tableName, T obj){
-        if(obj instanceof User){
-            User user = (User) obj;
+        if(obj instanceof User user){
             String deleteQuery = "DELETE FROM " + tableName + " WHERE id = ?";
 
             try(PreparedStatement statement = connection.prepareStatement(deleteQuery)){
                 statement.setString(1, user.getId());
+
+                if(statement.executeUpdate() > 0){
+
+                    return Result.ok();
+                }else{
+
+                    return Result.error(Result.ErrorCode.NOT_FOUND);
+                }
+            }catch(SQLException e){
+                e.printStackTrace();
+
+                return Result.error(Result.ErrorCode.CONFLICT);
+            }
+        }
+
+        if(obj instanceof Short st){
+            String deleteQuery = "DELETE FROM " + tableName + " WHERE id = ?";
+
+            try(PreparedStatement statement = connection.prepareStatement(deleteQuery)){
+                statement.setString(1, st.getId());
 
                 if(statement.executeUpdate() > 0){
 

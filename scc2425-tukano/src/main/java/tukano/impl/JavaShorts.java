@@ -69,7 +69,7 @@ public class JavaShorts implements Shorts {
 		// '%s'", shortId);
 		// var likes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_SHORTS,
 		// Long.class, query).value();
-		return CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId, Short.class);
+		return PostgreSQLLayer.getInstance().getOne(PostgreSQLLayer.TABLE_SHORTS, shortId, Short.class);
 		// return errorOrValue(
 		// CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_SHORTS, shortId,
 		// Short.class),
@@ -111,7 +111,7 @@ public class JavaShorts implements Shorts {
 			return error(shortIdResults.error());
 		}
 	}
-
+	// TO THIS FOR POSTGRESQL, VERY SIMPLE JUST NEED TO CREATE A FOLLOWERS TABLE IN POSTGRE
 	@Override
 	public Result<Void> follow(String userId1, String userId2, boolean isFollowing, String password) {
 		Log.info(() -> format("follow : userId1 = %s, userId2 = %s, isFollowing = %s, pwd = %s\n", userId1, userId2,
@@ -124,7 +124,7 @@ public class JavaShorts implements Shorts {
 							: CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_FOLLOWING, f));
 		});
 	}
-
+	
 	@Override
 	public Result<List<String>> followers(String userId, String password) {
 		Log.info(() -> format("followers : userId = %s, pwd = %s\n", userId, password));
