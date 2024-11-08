@@ -13,7 +13,6 @@ import static tukano.api.Result.errorOrResult;
 import static tukano.api.Result.ok;
 import tukano.api.User;
 import tukano.api.Users;
-import tukano.db.CosmosDBLayer;
 import tukano.db.PostgreSQLLayer;
 
 public class JavaUsers implements Users {
@@ -38,7 +37,7 @@ public class JavaUsers implements Users {
 		if (badUserInfo(user))
 			return error(BAD_REQUEST);
 		return Result.errorOrValue(
-				PostgreSQLLayer.getInstance().insertOne("users", user),
+				PostgreSQLLayer.getInstance().insertOne(PostgreSQLLayer.TABLE_USERS, user),
 				user.getUserId());
 		
 	}
@@ -52,7 +51,7 @@ public class JavaUsers implements Users {
 		}
 
 		return errorOrResult(
-				PostgreSQLLayer.getInstance().getOne("users", userId, User.class),
+				PostgreSQLLayer.getInstance().getOne(PostgreSQLLayer.TABLE_USERS, userId, User.class),
 				user -> validatedUserOrError(Result.ok(user), pwd));
 	}
 
@@ -65,10 +64,10 @@ public class JavaUsers implements Users {
 
 		return errorOrResult(
 				validatedUserOrError(
-						CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class), pwd),
+						PostgreSQLLayer.getInstance().getOne(PostgreSQLLayer.TABLE_USERS, userId, User.class), pwd),
 				user -> {
 					user.updateFrom(other);
-					return CosmosDBLayer.getInstance().updateOne(CosmosDBLayer.CONTAINER_USERS, user);
+					return PostgreSQLLayer.getInstance().updateOne(PostgreSQLLayer.TABLE_USERS, user);
 				});
 	}
 
@@ -81,9 +80,9 @@ public class JavaUsers implements Users {
 
 		return errorOrResult(
 				validatedUserOrError(
-						CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class), pwd),
+						PostgreSQLLayer.getInstance().getOne(PostgreSQLLayer.TABLE_USERS, userId, User.class), pwd),
 				user -> {
-					var deletedUser = CosmosDBLayer.getInstance().deleteOne(CosmosDBLayer.CONTAINER_USERS, user);
+					var deletedUser = PostgreSQLLayer.getInstance().deleteOne(PostgreSQLLayer.TABLE_USERS, user);
 					return deletedUser.isOK() ? ok(user) : error(NOT_FOUND);
 				});
 	}
@@ -95,12 +94,12 @@ public class JavaUsers implements Users {
 		}
 		Log.info(() -> format("searchUsers : pattern = %s\n", pattern));
 
-		var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
+		/*var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
 		var hits = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_USERS, User.class, query);
 		List<User> users = hits.value().stream()
 				.map(User::copyWithoutPassword)
-				.toList();
-		return Result.ok(users);
+				.toList();*/
+		return Result.error(Result.ErrorCode.NOT_IMPLEMENTED);
 	}
 
 	private Result<User> validatedUserOrError(Result<User> res, String pwd) {

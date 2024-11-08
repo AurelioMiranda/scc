@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.logging.Logger;
 
 import tukano.api.Result;
+import tukano.api.Short;
 import tukano.api.User;
 import utils.Props;
 
@@ -17,9 +18,8 @@ public class PostgreSQLLayer {
     private static final String DB_PASSWORD = Props.get("POSTGRE_PASS", "abcde12345!");
     private static Logger Log = Logger.getLogger(PostgreSQLLayer.class.getName());
 
-    String url = "jdbc:postgresql://c-scc-tukano-postgresqk-70068.fientyiqa2kzrw.postgres.cosmos.azure.com:5432/tukano?user=citus&password=abcde12345!&sslmode=require";
-    String username = "citus";
-    String password = "abcde12345!";
+   public static final String TABLE_USERS = "users";
+   public static final String TABLE_SHORTS = "shorts";
 
     private static PostgreSQLLayer instance;
     private Connection connection;
@@ -84,15 +84,36 @@ public class PostgreSQLLayer {
                 return Result.error(Result.ErrorCode.FORBIDDEN);
             }
         }
+
+        // Insert a SHORT
+        if(obj instanceof Short st){
+            String insertQuery = "INSERT INTO " + tableName + " (shortId, id, ownerId, bloburl, timestamp, totalLikes) VALUES (?, ?, ?, ?, ?, ?)";
+
+            try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
+                // Set the parameters based on the User object
+                statement.setString(1, st.getShortId());       
+                statement.setString(2, st.getId()); 
+                statement.setString(3, st.getOwnerId());          
+                statement.setString(4, st.getBlobUrl());           
+                statement.setLong(5, st.getTimestamp());         
+                statement.setInt(6, st.getTotalLikes());   
+                
+                // Execute the query
+                statement.executeUpdate();
+                return Result.ok(obj);
+            } catch (SQLException e) {
+                e.printStackTrace();
+
+                return Result.error(Result.ErrorCode.FORBIDDEN);
+            }
+        }
+
         return Result.error(Result.ErrorCode.INTERNAL_ERROR);
     }
 
     //TODO Rest of CRUD operations
-    //View CosmosDBLayer for the methods to implement
+    //Missing Search All
     
-    // ERROR CODE 403 FORBIDDEN
-    // Don't know why, user citus has permissions
-    // Issue might be from the query, but everything looks alright
     public <T> Result<T> getOne(String tableName, String id, Class<T> clazz){
          String getQuery = "SELECT id, userId, pwd, email, displayName FROM " + tableName + " WHERE id = ?";
 
@@ -100,7 +121,6 @@ public class PostgreSQLLayer {
             // Set the id parameter on getQuery
             statement.setString(1, id);
             
-    
             // Execute the query and get the result set object
             try (ResultSet resultSet = statement.executeQuery()) {
                 // Check if a result was returned
@@ -125,4 +145,64 @@ public class PostgreSQLLayer {
             return Result.error(Result.ErrorCode.CONFLICT);
         }
     }
+
+    // Passes all validation but doesn't update the row in postgre for some reason
+    public <T> Result<T> updateOne(String tableName, T obj) {
+        if(obj instanceof User){
+            User user = (User) obj;
+
+            String updateQuery = "UPDATE " + tableName + " SET pwd = ?, email = ?, displayName = ? WHERE id = ?";
+            try(PreparedStatement statement = connection.prepareStatement(updateQuery)){
+                // Set the update data
+                statement.setString(1, user.getPwd());
+                statement.setString(2, user.getEmail());
+                statement.setString(3, user.getDisplayName());
+
+                // Set the id we are looking for
+                statement.setString(4, user.getId());
+                
+                // Execute the update query
+                if (statement.executeUpdate() > 0) {
+                    // Rows updated, sucessfull
+
+                    return (Result<T>) Result.ok(user);
+                } else {
+                    // No rows were updated, the user was not found
+
+                    return Result.error(Result.ErrorCode.NOT_FOUND);
+                }
+            }catch(SQLException e){
+                e.printStackTrace();
+                return Result.error(Result.ErrorCode.CONFLICT);
+            }
+        }
+        return Result.error(Result.ErrorCode.INTERNAL_ERROR);
+    }
+
+    public <T> Result<?> deleteOne(String tableName, T obj){
+        if(obj instanceof User){
+            User user = (User) obj;
+            String deleteQuery = "DELETE FROM " + tableName + " WHERE id = ?";
+
+            try(PreparedStatement statement = connection.prepareStatement(deleteQuery)){
+                statement.setString(1, user.getId());
+
+                if(statement.executeUpdate() > 0){
+
+                    return Result.ok();
+                }else{
+
+                    return Result.error(Result.ErrorCode.NOT_FOUND);
+                }
+            }catch(SQLException e){
+                e.printStackTrace();
+
+                return Result.error(Result.ErrorCode.CONFLICT);
+            }
+        }
+
+        return Result.error(Result.ErrorCode.INTERNAL_ERROR);
+    }
+
+    
 }

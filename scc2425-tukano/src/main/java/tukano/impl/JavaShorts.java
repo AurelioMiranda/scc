@@ -1,16 +1,6 @@
 package tukano.impl;
 
 import static java.lang.String.format;
-import static tukano.api.Result.error;
-import static tukano.api.Result.errorOrResult;
-import static tukano.api.Result.errorOrValue;
-import static tukano.api.Result.errorOrVoid;
-import static tukano.api.Result.ok;
-import static tukano.api.Result.ErrorCode.BAD_REQUEST;
-import static tukano.api.Result.ErrorCode.FORBIDDEN;
-import static utils.DB.getOne;
-
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -19,15 +9,21 @@ import java.util.stream.Collectors;
 
 import tukano.api.Blobs;
 import tukano.api.Result;
+import static tukano.api.Result.ErrorCode.BAD_REQUEST;
+import static tukano.api.Result.ErrorCode.FORBIDDEN;
+import static tukano.api.Result.error;
+import static tukano.api.Result.errorOrResult;
+import static tukano.api.Result.errorOrValue;
+import static tukano.api.Result.errorOrVoid;
+import static tukano.api.Result.ok;
 import tukano.api.Short;
 import tukano.api.Shorts;
 import tukano.api.User;
+import tukano.db.CosmosDBLayer;
+import tukano.db.PostgreSQLLayer;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
-import utils.DB;
-import utils.JSON;
-import tukano.db.CosmosDBLayer;
 
 public class JavaShorts implements Shorts {
 
@@ -55,7 +51,7 @@ public class JavaShorts implements Shorts {
 			var shrt = new Short(shortId, userId, blobUrl);
 			shrt.setId(shortId);
 
-			return CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt);
+			return PostgreSQLLayer.getInstance().insertOne(PostgreSQLLayer.TABLE_SHORTS, shrt);
 			// return errorOrValue(
 			// CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
 			// s -> s.copyWithLikes_And_Token(0));
