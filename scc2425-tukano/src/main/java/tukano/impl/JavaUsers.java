@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 
 import tukano.api.Result;
 import static tukano.api.Result.ErrorCode.BAD_REQUEST;
-import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
+import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static tukano.api.Result.ErrorCode.NOT_FOUND;
 import static tukano.api.Result.error;
 import static tukano.api.Result.errorOrResult;
@@ -105,7 +105,7 @@ public class JavaUsers implements Users {
 
 	private Result<User> validatedUserOrError(Result<User> res, String pwd) {
 		if (res.isOK())
-			return res.value().getPwd().equals(pwd) ? res : error(INTERNAL_ERROR);
+			return res.value().getPwd().equals(pwd) ? res : error(FORBIDDEN);
 		else
 			return res;
 	}

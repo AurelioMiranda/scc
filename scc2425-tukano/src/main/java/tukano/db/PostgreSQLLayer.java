@@ -94,11 +94,12 @@ public class PostgreSQLLayer {
     // Don't know why, user citus has permissions
     // Issue might be from the query, but everything looks alright
     public <T> Result<T> getOne(String tableName, String id, Class<T> clazz){
-         String getQuery = "SELECT id, userId, pwd, email, displayName FROM users WHERE id = ?";
+         String getQuery = "SELECT id, userId, pwd, email, displayName FROM " + tableName + " WHERE id = ?";
 
         try (PreparedStatement statement = connection.prepareStatement(getQuery)) {
             // Set the id parameter on getQuery
             statement.setString(1, id);
+            
     
             // Execute the query and get the result set object
             try (ResultSet resultSet = statement.executeQuery()) {
