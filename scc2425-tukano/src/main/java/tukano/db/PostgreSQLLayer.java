@@ -3,6 +3,7 @@ package tukano.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Logger;
 
@@ -30,21 +31,11 @@ public class PostgreSQLLayer {
         instance = new PostgreSQLLayer();
         return instance;
     }
-
-    /* 
-    private PostgreSQLLayer() {
-        try {
-            connection = DriverManager.getConnection(url, username, password);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }*/
-
-    
+  
     // Private constructor to initialize PostgreSQL connection
     private PostgreSQLLayer() {
         try {
-            // Load PostgreSQL driver
+            // Load PostgreSQL driver (THIS IS WHY THE CONNECTION WAS NULL DO NOT REMOVE FROM HERE)
             Class.forName("org.postgresql.Driver");
             
             // Establish the connection
@@ -76,9 +67,6 @@ public class PostgreSQLLayer {
             // Each ? will have a corresponding value, these are just placeholders
             String insertQuery = "INSERT INTO " + tableName + " (userId, id, pwd, email, displayName) VALUES (?, ?, ?, ?, ?)";
 
-            // THIS IS NOT WORKING BECAUSE THE CONNECTION IS NULL
-            // ON A STANDALONE PROJECT IT WORKS FINE
-            // AT THIS POINT, I DO NOT KNOW .-.
             try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
                 // Set the parameters based on the User object
                 statement.setString(1, user.getUserId());       
@@ -92,12 +80,48 @@ public class PostgreSQLLayer {
                 return Result.ok(obj);
             } catch (SQLException e) {
                 e.printStackTrace();
+
                 return Result.error(Result.ErrorCode.FORBIDDEN);
             }
         }
-        return Result.error(Result.ErrorCode.NOT_IMPLEMENTED);
+        return Result.error(Result.ErrorCode.INTERNAL_ERROR);
     }
 
     //TODO Rest of CRUD operations
     //View CosmosDBLayer for the methods to implement
+    
+    // ERROR CODE 403 FORBIDDEN
+    // Don't know why, user citus has permissions
+    // Issue might be from the query, but everything looks alright
+    public <T> Result<T> getOne(String tableName, String id, Class<T> clazz){
+         String getQuery = "SELECT id, userId, pwd, email, displayName FROM users WHERE id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(getQuery)) {
+            // Set the id parameter on getQuery
+            statement.setString(1, id);
+    
+            // Execute the query and get the result set object
+            try (ResultSet resultSet = statement.executeQuery()) {
+                // Check if a result was returned
+                if (resultSet.next()) {
+                    // Retrieve the data
+                    User user = new User();
+                    user.setUserId(resultSet.getString("userId"));
+                    user.setId(resultSet.getString("id"));
+                    user.setPwd(resultSet.getString("pwd"));
+                    user.setEmail(resultSet.getString("email"));
+                    user.setDisplayName(resultSet.getString("displayName"));
+    
+                    return (Result<T>) Result.ok(user);
+                } else {
+                    // If no user is found, return error code
+                    return Result.error(Result.ErrorCode.NOT_FOUND);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+
+            return Result.error(Result.ErrorCode.CONFLICT);
+        }
+    }
 }

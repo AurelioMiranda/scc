@@ -1,25 +1,20 @@
 package tukano.impl;
 
 import static java.lang.String.format;
-import static tukano.api.Result.error;
-import static tukano.api.Result.errorOrResult;
-import static tukano.api.Result.errorOrValue;
-import static tukano.api.Result.ok;
-import static tukano.api.Result.ErrorCode.BAD_REQUEST;
-import static tukano.api.Result.ErrorCode.FORBIDDEN;
-import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
-import static tukano.api.Result.ErrorCode.NOT_FOUND;
-
 import java.util.List;
 import java.util.logging.Logger;
 
 import tukano.api.Result;
+import static tukano.api.Result.ErrorCode.BAD_REQUEST;
+import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
+import static tukano.api.Result.ErrorCode.NOT_FOUND;
+import static tukano.api.Result.error;
+import static tukano.api.Result.errorOrResult;
+import static tukano.api.Result.ok;
 import tukano.api.User;
 import tukano.api.Users;
 import tukano.db.CosmosDBLayer;
 import tukano.db.PostgreSQLLayer;
-import utils.DB;
-import utils.JSON;
 
 public class JavaUsers implements Users {
 
@@ -57,7 +52,7 @@ public class JavaUsers implements Users {
 		}
 
 		return errorOrResult(
-				CosmosDBLayer.getInstance().getOne(CosmosDBLayer.CONTAINER_USERS, userId, User.class),
+				PostgreSQLLayer.getInstance().getOne("users", userId, User.class),
 				user -> validatedUserOrError(Result.ok(user), pwd));
 	}
 
@@ -110,7 +105,7 @@ public class JavaUsers implements Users {
 
 	private Result<User> validatedUserOrError(Result<User> res, String pwd) {
 		if (res.isOK())
-			return res.value().getPwd().equals(pwd) ? res : error(FORBIDDEN);
+			return res.value().getPwd().equals(pwd) ? res : error(INTERNAL_ERROR);
 		else
 			return res;
 	}
