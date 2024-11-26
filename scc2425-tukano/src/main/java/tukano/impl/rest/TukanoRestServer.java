@@ -8,6 +8,10 @@ import org.glassfish.jersey.server.ResourceConfig;
 
 import jakarta.ws.rs.core.Application;
 import tukano.impl.Token;
+import tukano.srv.Authentication;
+import tukano.srv.LoginControl;
+import tukano.srv.auth.RequestCookiesCleanupFilter;
+import tukano.srv.auth.RequestCookiesFilter;
 import utils.Args;
 import utils.IP;
 import utils.Props;
@@ -37,6 +41,10 @@ public class TukanoRestServer extends Application {
 		resources.add(RestBlobsResource.class);
 		resources.add(RestUsersResource.class);
 		resources.add(RestShortsResource.class);
+		resources.add(LoginControl.class);
+		resources.add(RequestCookiesFilter.class);
+     	resources.add(RequestCookiesCleanupFilter.class);
+        resources.add(Authentication.class);
 	}
 
 	protected void start() throws Exception {

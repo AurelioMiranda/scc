@@ -2,6 +2,7 @@ package tukano.srv;
 
 import java.net.URI;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
@@ -19,10 +20,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import redis.clients.jedis.Jedis;
+import tukano.api.Result;
+import tukano.impl.JavaUsers;
 import tukano.api.User;
 import tukano.cache.RedisCache;
 import tukano.srv.auth.RequestCookies;
 import utils.JSON;
+import java.util.logging.Logger;
+import utils.Props;
 
 @Path(Authentication.PATH)
 public class Authentication {
@@ -32,12 +37,20 @@ public class Authentication {
 	static final String COOKIE_KEY = "scc:session";
 	static final String LOGIN_PAGE = "login.html";
 	private static final int MAX_COOKIE_AGE = 3600;
-	static final String REDIRECT_TO_AFTER_LOGIN = "/ctrl/version";
+	static final String REDIRECT_TO_AFTER_LOGIN = "ctrl/login";
+	private static Logger Log = Logger.getLogger(Authentication.class.getName());
 
 	@POST
 	public Response login(@FormParam(USER) String user, @FormParam(PWD) String password) {
 		System.out.println("user: " + user + " pwd:" + password);
-		boolean pwdOk = true; // replace with code to check user password
+
+		Result<User> userResult = JavaUsers.getInstance().getUser(user, password);
+		boolean pwdOk = false;
+
+		if (userResult.isOK()) {
+			pwdOk = true;
+		}
+
 		if (pwdOk) {
 			String uid = UUID.randomUUID().toString();
 			var cookie = new NewCookie.Builder(COOKIE_KEY)
@@ -48,13 +61,15 @@ public class Authentication {
 					.httpOnly(true)
 					.build();
 
-			/*try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				var key = "session:" + user;
-				var value = JSON.encode(user); // TODO: encode a Session
-				jedis.set(key, value);
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-			}*/
-			FakeRedisLayer.getInstance().putSession( new Session( uid, user));	
+			/*
+			 * try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			 * var key = "session:" + user;
+			 * var value = JSON.encode(user); // TODO: encode a Session
+			 * jedis.set(key, value);
+			 * jedis.expire(key, RedisCache.ALIVE_TIME);
+			 * }
+			 */
+			FakeRedisLayer.getInstance().putSession(new Session(uid, user));
 
 			return Response.seeOther(URI.create(REDIRECT_TO_AFTER_LOGIN))
 					.cookie(cookie)
@@ -85,7 +100,7 @@ public class Authentication {
 			throw new NotAuthorizedException("No session initialized");
 
 		// var session = getUserSession(cookie.getValue()); // TODO: use cache
-		var session = FakeRedisLayer.getInstance().getSession( cookie.getValue());
+		var session = FakeRedisLayer.getInstance().getSession(cookie.getValue());
 
 		if (session == null)
 			throw new NotAuthorizedException("No valid session initialized");
@@ -100,7 +115,7 @@ public class Authentication {
 	}
 
 	private static Session getUserSession(String cookieValue) {
-		
+
 		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 			var key = cookieValue;
 			var val = jedis.get(key);
