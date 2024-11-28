@@ -12,6 +12,7 @@ import tukano.api.Result;
 import tukano.impl.rest.TukanoRestServer;
 import tukano.impl.storage.BlobStorage;
 import tukano.impl.storage.FilesystemStorage;
+import tukano.srv.Authentication;
 import utils.Hash;
 import utils.Hex;
 
@@ -36,6 +37,8 @@ public class JavaBlobs implements Blobs {
 	
 	@Override
 	public Result<Void> upload(String blobId, byte[] bytes, String token) {
+		verifyBlobOwnership(blobId);
+
 		Log.info(() -> format("upload : blobId = %s, sha256 = %s, token = %s\n", blobId, Hex.of(Hash.sha256(bytes)), token));
 
 		/* 
@@ -47,6 +50,8 @@ public class JavaBlobs implements Blobs {
 
 	@Override
 	public Result<byte[]> download(String blobId, String token) {
+		verifyBlobOwnership(blobId);
+
 		Log.info(() -> format("download : blobId = %s, token=%s\n", blobId, token));
 
 		/* 
@@ -69,6 +74,8 @@ public class JavaBlobs implements Blobs {
 
 	@Override
 	public Result<Void> delete(String blobId, String token) {
+		verifyBlobOwnership(blobId);
+
 		Log.info(() -> format("delete : blobId = %s, token=%s\n", blobId, token));
 	
 		/* 
@@ -87,6 +94,11 @@ public class JavaBlobs implements Blobs {
 			return error(FORBIDDEN);
 		*/
 		return storage.delete( toPath(userId));
+	}
+
+	private static void verifyBlobOwnership (String blobId){
+		var ownerId = JavaShorts.getInstance().getShort(blobId).value().getOwnerId();
+		var session = Authentication.validateSession(ownerId);
 	}
 	
 	private boolean validBlobId(String blobId, String token) {		

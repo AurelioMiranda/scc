@@ -21,6 +21,7 @@ import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import redis.clients.jedis.Jedis;
 import tukano.api.Result;
+import tukano.impl.JavaShorts;
 import tukano.impl.JavaUsers;
 import tukano.api.User;
 import tukano.cache.RedisCache;

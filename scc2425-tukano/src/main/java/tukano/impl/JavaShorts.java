@@ -17,7 +17,6 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import redis.clients.jedis.Jedis;
 import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
@@ -57,15 +56,15 @@ public class JavaShorts implements Shorts {
 			var shrt = new Short(shortId, userId, blobUrl);
 			shrt.setId(shortId);
 
-			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				var key = "short:" + shortId;
-				var value = JSON.encode(shrt);
-				jedis.set(key, value);
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-
-				var cnt = jedis.incr(RedisCache.NUM_SHORTS_COUNTER);
-				Log.info("Total shorts: " + cnt);
-			}
+			//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			//	var key = "short:" + shortId;
+			//	var value = JSON.encode(shrt);
+			//	jedis.set(key, value);
+			//	jedis.expire(key, RedisCache.ALIVE_TIME);
+//
+			//	var cnt = jedis.incr(RedisCache.NUM_SHORTS_COUNTER);
+			//	Log.info("Total shorts: " + cnt);
+			//}
 
 			return errorOrValue(
 					CosmosDBLayer.getInstance().insertOne(CosmosDBLayer.CONTAINER_SHORTS, shrt),
@@ -80,16 +79,16 @@ public class JavaShorts implements Shorts {
 		if (shortId == null)
 			return error(BAD_REQUEST);
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "short:" + shortId;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-				var short1 = JSON.decode(val, Short.class);
-				return Result.ok(short1);
-			}
-		}
+		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+		//	var key = "short:" + shortId;
+		//	var val = jedis.get(key);
+//
+		//	if (val != null) {
+		//		jedis.expire(key, RedisCache.ALIVE_TIME);
+		//		var short1 = JSON.decode(val, Short.class);
+		//		return Result.ok(short1);
+		//	}
+		//}
 
 		var query = format("SELECT VALUE COUNT(1) FROM Likes l WHERE l.shortId = '%s'", shortId);
 		var likes = CosmosDBLayer.getInstance().query(CosmosDBLayer.CONTAINER_LIKES, Long.class, query).value();
@@ -104,14 +103,14 @@ public class JavaShorts implements Shorts {
 	public Result<Void> deleteShort(String shortId, String password) {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = "short:" + shortId;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.del(key);
-			}
-		}
+		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+		//	var key = "short:" + shortId;
+		//	var val = jedis.get(key);
+//
+		//	if (val != null) {
+		//		jedis.del(key);
+		//	}
+		//}
 
 		return errorOrResult(getShort(shortId), shrt -> {
 			return errorOrResult(okUser(shrt.getOwnerId(), password), user -> {
@@ -208,16 +207,16 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("getFeed : userId = %s, pwd = %s\n", userId, password));
 		String key = "feed :" + userId;
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var cachedFeed = jedis.get(key);
-			if (cachedFeed != null) {
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-				List<String> feed = Arrays
-						.asList(cachedFeed.replace("[", "")
-								.replace("]", "").replace("\"", "").split(","));
-				return Result.ok(feed);
-			}
-		}
+		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+		//	var cachedFeed = jedis.get(key);
+		//	if (cachedFeed != null) {
+		//		jedis.expire(key, RedisCache.ALIVE_TIME);
+		//		List<String> feed = Arrays
+		//				.asList(cachedFeed.replace("[", "")
+		//						.replace("]", "").replace("\"", "").split(","));
+		//		return Result.ok(feed);
+		//	}
+		//}
 
 		final var QUERY_FMT = """
 				SELECT s.shortId, s.timestamp FROM Short s WHERE	s.ownerId = '%s'
@@ -231,10 +230,10 @@ public class JavaShorts implements Shorts {
 
 		if (queryResult.isOK()) {
 			List<String> feed = queryResult.value();
-			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				jedis.set(key, JSON.encode(feed));
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-			}
+			//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			//	jedis.set(key, JSON.encode(feed));
+			//	jedis.expire(key, RedisCache.ALIVE_TIME);
+			//}
 			return Result.ok(feed);
 		}
 
