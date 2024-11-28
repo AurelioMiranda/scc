@@ -1,55 +1,60 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tukano-app
-  labels:
-    app: tukano
+  name: tukano-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tukano
+      app: tukano-service
   template:
     metadata:
       labels:
-        app: tukano
+        app: tukano-service
     spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
       containers:
-      - name: web-app
-        image: scc2425-webapp
+      - name: tukano-service
+        image: rafaelpires70068/scc2425-tukanoapp:latest
         ports:
-        - containerPort: 8080
-        env:
-        - name: REDIS_HOST
-          value: "redis-service"
-        - name: REDIS_PORT
-          value: "6379"
-        - name: COSMOS_DB_HOST
-          valueFrom:
-            secretKeyRef:
-              name: cosmos-db-secret
-              key: cosmosHost
-        - name: COSMOS_DB_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cosmos-db-secret
-              key: cosmosKey
-        - name: BLOB_STORAGE_CONNECTION_STRING
-          valueFrom:
-            secretKeyRef:
-              name: blob-storage-secret
-              key: connectionString
-        volumeMounts:
-        - name: blob-storage
-          mountPath: /data
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+          limits:
+            cpu: 75m
+            memory: 128Mi
         startupProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 3000 
+          failureThreshold: 5
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000 
           failureThreshold: 3
-          initialDelaySeconds: 5
+          initialDelaySeconds: 3
           periodSeconds: 5
-      volumes:
-      - name: blob-storage
-        persistentVolumeClaim:
-          claimName: blob-pvc
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000 
+          failureThreshold: 5
+          initialDelaySeconds: 3
+          periodSeconds: 3
+      initContainers:
+      - name: wait-for-rabbitmq
+        image: busybox
+        command: ['sh', '-c', 'until nc -zv rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done;']
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+          limits:
+            cpu: 75m
+            memory: 128Mi

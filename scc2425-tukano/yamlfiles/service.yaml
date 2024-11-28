@@ -1,55 +1,12 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
-  name: tukano-app
-  labels:
-    app: tukano
+  name: tukano-service
 spec:
-  replicas: 1
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
   selector:
-    matchLabels:
-      app: tukano
-  template:
-    metadata:
-      labels:
-        app: tukano
-    spec:
-      containers:
-      - name: web-app
-        image: scc2425-webapp
-        ports:
-        - containerPort: 8080
-        env:
-        - name: REDIS_HOST
-          value: "redis-service"
-        - name: REDIS_PORT
-          value: "6379"
-        - name: COSMOS_DB_HOST
-          valueFrom:
-            secretKeyRef:
-              name: cosmos-db-secret
-              key: cosmosHost
-        - name: COSMOS_DB_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cosmos-db-secret
-              key: cosmosKey
-        - name: BLOB_STORAGE_CONNECTION_STRING
-          valueFrom:
-            secretKeyRef:
-              name: blob-storage-secret
-              key: connectionString
-        volumeMounts:
-        - name: blob-storage
-          mountPath: /data
-        startupProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          failureThreshold: 3
-          initialDelaySeconds: 5
-          periodSeconds: 5
-      volumes:
-      - name: blob-storage
-        persistentVolumeClaim:
-          claimName: blob-pvc
+    app: tukano-service
