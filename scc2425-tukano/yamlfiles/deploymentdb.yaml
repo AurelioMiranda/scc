@@ -16,9 +16,9 @@ spec:
         "kubernetes.io/os": linux
       containers:
       - name: db-service
-        image: mongo:latest
+        image: postgres:latest
         ports:
-        - containerPort: 3001
+        - containerPort: 5432
         resources:
           requests:
             cpu: 1m
@@ -27,34 +27,20 @@ spec:
             cpu: 75m
             memory: 128Mi
         startupProbe:
-          httpGet:
-            path: /health
-            port: 27017 
+          tcpSocket:
+            port: 5432
           failureThreshold: 5
           initialDelaySeconds: 20
           periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 27017 
-          failureThreshold: 3
-          initialDelaySeconds: 3
-          periodSeconds: 5
         livenessProbe:
-          httpGet:
-            path: /health
-            port: 27017 
-          failureThreshold: 5
+          tcpSocket:
+            port: 5432
           initialDelaySeconds: 3
           periodSeconds: 3
-      initContainers:
-      - name: wait-for-rabbitmq
-        image: busybox
-        command: ['sh', '-c', 'until nc -zv rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done;']
-        resources:
-          requests:
-            cpu: 1m
-            memory: 50Mi
-          limits:
-            cpu: 75m
-            memory: 128Mi
+          failureThreshold: 5
+        env:
+        - name: POSTGRES_DB
+          value: tukano
+        - name: POSTGRES_USER
+          value: sa
+        - name: POSTGRES_PASSWORD
