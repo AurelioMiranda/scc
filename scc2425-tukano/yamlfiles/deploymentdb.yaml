@@ -45,10 +45,3 @@ spec:
           value: sa
         - name: POSTGRES_PASSWORD
           value: as
-        volumeMounts:
-        - mountPath: /var/lib/postgresql/data
-          name: postgres-storage
-      volumes:
-      - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
