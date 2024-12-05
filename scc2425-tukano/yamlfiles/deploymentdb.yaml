@@ -42,13 +42,13 @@ spec:
         - name: POSTGRES_DB
           value: tukano
         - name: POSTGRES_USER
-          value: sa
+          value: megaadmin
         - name: POSTGRES_PASSWORD
-          value: as
+          value: passwordmega
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: postgres-storage
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
-          claimName: postgres-pvc
+          claimName: azure-managed-disk
