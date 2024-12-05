@@ -44,7 +44,7 @@ spec:
         - name: POSTGRES_USER
           value: sa
         - name: POSTGRES_PASSWORD
-          value: yourpassword
+          value: as
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: postgres-storage

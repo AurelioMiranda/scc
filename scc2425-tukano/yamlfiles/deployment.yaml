@@ -48,9 +48,9 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 3
       initContainers:
-      - name: wait-for-rabbitmq
+      - name: wait-for-postgres
         image: busybox
-        command: ['sh', '-c', 'until nc -zv rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done;']
+        command: ['sh', '-c', 'until nc -zv db-service 5432; do echo waiting for postgres; sleep 2; done;']
         resources:
           requests:
             cpu: 1m

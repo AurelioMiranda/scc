@@ -4,7 +4,7 @@
 		<property name="connection.driver_class">org.postgresql.Driver</property>
 		<property name="connection.url">jdbc:postgresql://db-service:5432/tukano</property>
 		<property name="connection.username">sa</property>
-		<property name="connection.password"></property>
+		<property name="connection.password">as</property>
 		<!-- JDBC connection pool settings ... using built-in test pool -->
 		<property name="connection.pool_size">64</property>
 		<!-- Echo the SQL to stdout -->
