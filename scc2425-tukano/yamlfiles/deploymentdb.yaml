@@ -42,6 +42,6 @@ spec:
         - name: POSTGRES_DB
           value: tukano
         - name: POSTGRES_USER
-          value: sa
+          value: megaadmin
         - name: POSTGRES_PASSWORD
-          value: as
+          value: passwordmega

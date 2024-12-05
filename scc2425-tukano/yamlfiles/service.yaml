@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: tukano-service
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
   - name: http
     port: 3000
