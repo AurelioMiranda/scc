@@ -18,7 +18,7 @@ spec:
       - name: tukano-service
         image: rafaelpires70068/scc2425-tukanoapp:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 8080
         resources:
           requests:
             cpu: 1m
@@ -26,27 +26,9 @@ spec:
           limits:
             cpu: 75m
             memory: 128Mi
-        startupProbe:
-          httpGet:
-            path: /health
-            port: 3000 
-          failureThreshold: 5
-          initialDelaySeconds: 20
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3000 
-          failureThreshold: 3
-          initialDelaySeconds: 3
-          periodSeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000 
-          failureThreshold: 5
-          initialDelaySeconds: 3
-          periodSeconds: 3
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-storage
       initContainers:
       - name: wait-for-postgres
         image: busybox
@@ -58,3 +40,7 @@ spec:
           limits:
             cpu: 75m
             memory: 128Mi
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
