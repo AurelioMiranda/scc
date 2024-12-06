@@ -21,11 +21,11 @@ spec:
         - containerPort: 5432
         resources:
           requests:
-            cpu: 1m
-            memory: 50Mi
-          limits:
-            cpu: 75m
+            cpu: 100m
             memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
         startupProbe:
           tcpSocket:
             port: 5432
