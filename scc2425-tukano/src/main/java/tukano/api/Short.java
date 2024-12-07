@@ -22,7 +22,6 @@ public class Short {
 
 	@Id
 	String shortId;
-	String id;
 	String ownerId;
 	String blobUrl;
 	long timestamp;
@@ -34,7 +33,6 @@ public class Short {
 	public Short(String shortId, String ownerId, String blobUrl, long timestamp, int totalLikes) {
 		super();
 		this.shortId = shortId;
-		this.id = shortId;
 		this.ownerId = ownerId;
 		this.blobUrl = blobUrl;
 		this.timestamp = timestamp;
@@ -49,16 +47,8 @@ public class Short {
 		return shortId;
 	}
 
-	public String getId() {
-		return id;
-	}
-
 	public void setShortId(String shortId) {
 		this.shortId = shortId;
-	}
-
-	public void setId(String id) {
-		this.id = id;
 	}
 
 	public String getOwnerId() {

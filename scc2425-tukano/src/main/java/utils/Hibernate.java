@@ -21,7 +21,7 @@ import tukano.api.Result.ErrorCode;
  * @param <Session>
  */
 public class Hibernate {
-//	private static Logger Log = Logger.getLogger(Hibernate.class.getName());
+	// private static Logger Log = Logger.getLogger(Hibernate.class.getName());
 
 	private static final String HIBERNATE_CFG_FILE = "hibernate.cfg.xml";
 	private SessionFactory sessionFactory;
@@ -29,10 +29,12 @@ public class Hibernate {
 
 	private Hibernate() {
 		try {
-			sessionFactory = new Configuration().configure(new File(HIBERNATE_CFG_FILE)).buildSessionFactory();
-
-		} catch (Exception e) {
-			e.printStackTrace();
+			// Load configuration
+			sessionFactory = new Configuration().configure("hibernate.cfg.xml").buildSessionFactory();
+		} catch (Throwable ex) {
+			// Log and handle initialization errors
+			System.err.println("Initial SessionFactory creation failed." + ex);
+			throw new ExceptionInInitializerError(ex);
 		}
 	}
 
@@ -48,29 +50,29 @@ public class Hibernate {
 		return instance;
 	}
 
-	public Result<Void> persistOne(Object  obj) {
-		return execute( (hibernate) -> {
-			hibernate.persist( obj );
+	public Result<Void> persistOne(Object obj) {
+		return execute((hibernate) -> {
+			hibernate.persist(obj);
 		});
 	}
 
 	public <T> Result<T> updateOne(T obj) {
-		return execute( hibernate -> {
-			var res = hibernate.merge( obj );
-			if( res == null)
-				return Result.error( ErrorCode.NOT_FOUND );
-			
-			return Result.ok( res );
+		return execute(hibernate -> {
+			var res = hibernate.merge(obj);
+			if (res == null)
+				return Result.error(ErrorCode.NOT_FOUND);
+
+			return Result.ok(res);
 		});
 	}
-	
+
 	public <T> Result<T> deleteOne(T obj) {
-		return execute( hibernate -> {
-			hibernate.remove( obj );
-			return Result.ok( obj );
+		return execute(hibernate -> {
+			hibernate.remove(obj);
+			return Result.ok(obj);
 		});
 	}
-		
+
 	public <T> Result<T> getOne(Object id, Class<T> clazz) {
 		try (var session = sessionFactory.openSession()) {
 			var res = session.find(clazz, id);
@@ -82,7 +84,7 @@ public class Hibernate {
 			throw e;
 		}
 	}
-	
+
 	public <T> List<T> sql(String sqlStatement, Class<T> clazz) {
 		try (var session = sessionFactory.openSession()) {
 			var query = session.createNativeQuery(sqlStatement, clazz);
@@ -91,30 +93,28 @@ public class Hibernate {
 			throw e;
 		}
 	}
-	
+
 	public <T> Result<T> execute(Consumer<Session> proc) {
-		return execute( (hibernate) -> {
-			proc.accept( hibernate);
+		return execute((hibernate) -> {
+			proc.accept(hibernate);
 			return Result.ok();
 		});
 	}
-	
+
 	public <T> Result<T> execute(Function<Session, Result<T>> func) {
 		Transaction tx = null;
 		try (var session = sessionFactory.openSession()) {
 			tx = session.beginTransaction();
-			var res = func.apply( session );
+			var res = func.apply(session);
 			session.flush();
 			tx.commit();
 			return res;
-		}
-		catch (ConstraintViolationException __) {	
+		} catch (ConstraintViolationException __) {
 			return Result.error(ErrorCode.CONFLICT);
-		}  
-		catch (Exception e) {
-			if( tx != null )
+		} catch (Exception e) {
+			if (tx != null)
 				tx.rollback();
-			
+
 			e.printStackTrace();
 			throw e;
 		}

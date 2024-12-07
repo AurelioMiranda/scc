@@ -174,5 +174,10 @@
     	    <artifactId>jedis</artifactId>
     	    <version>5.2.0</version>
     	</dependency>
+		<dependency>
+		    <groupId>org.postgresql</groupId>
+		    <artifactId>postgresql</artifactId>
+		    <version>42.6.1</version>
+		</dependency>
 	</dependencies>
 </project>
