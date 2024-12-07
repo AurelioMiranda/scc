@@ -1,0 +1,48 @@
+config:
+    target: http://127.0.0.1:8080/tukano/rest
+    phases:
+        - name: simple_post
+          duration: 1
+          arrivalRate: 3
+    payload:
+        path: ./data/users.csv
+        order: sequence
+        skipHeader: true
+        delimiter: ","
+        skipEmptyLines: true
+        fields:
+            - "userId"
+            - "pwd"
+            - "email"
+            - "displayName"
+
+scenarios:
+  - name: test login functionality
+    flow:
+      - post:
+          url: "/rest/users/login"
+          headers:
+            Content-Type: application/json
+          json:
+            userId: "{{ userId }}"
+            password: "{{ password }}"
+          capture:
+            - header: "set-cookie"
+              regex: "sessionToken=([^;]+)"
+              as: "sessionCookie"
+              
+      - get:
+          url: http://localhost:8080/tukano/rest/blobs/jleo+75a37a10-bf63-4470-a664-db6195a92b5e?Content-Type=application/octet-stream
+    phases:
+      - duration: 1
+        arrivalRate: 5
+    payload:
+      path: ./data/login_users.csv
+      order: sequence
+      skipHeader: true
+      delimiter: ","
+      skipEmptyLines: true
+      fields:
+        - "userId"
+        - "password"
+

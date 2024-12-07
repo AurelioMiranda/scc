@@ -19,12 +19,10 @@ import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
-import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.impl.JavaShorts;
 import tukano.impl.JavaUsers;
 import tukano.api.User;
-import tukano.cache.RedisCache;
 import tukano.srv.auth.RequestCookies;
 import utils.JSON;
 import java.util.logging.Logger;
@@ -113,21 +111,5 @@ public class Authentication {
 			throw new NotAuthorizedException("Invalid user : " + session.user());
 
 		return session;
-	}
-
-	private static Session getUserSession(String cookieValue) {
-
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			var key = cookieValue;
-			var val = jedis.get(key);
-
-			if (val != null) {
-				jedis.expire(key, RedisCache.ALIVE_TIME);
-				var session = JSON.decode(val, Session.class);
-				return session;
-			}
-		}
-
-		return null;
 	}
 }
