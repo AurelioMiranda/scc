@@ -40,6 +40,16 @@ spec:
           limits:
             cpu: 75m
             memory: 128Mi
+      - name: wait-for-redis
+        image: busybox
+        command: ['sh', '-c', 'until nc -zv redis 6379; do echo waiting for redis; sleep 2; done;']
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
