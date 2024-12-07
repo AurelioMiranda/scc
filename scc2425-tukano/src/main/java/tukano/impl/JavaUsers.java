@@ -39,7 +39,7 @@ public class JavaUsers implements Users {
 		Log.info(() -> format("createUser : %s\n", user));
 
 		if (badUserInfo(user))
-			return error(BAD_REQUEST);
+			return error(FORBIDDEN);
 
 		// try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 		// var key = "user:" + user.getUserId();

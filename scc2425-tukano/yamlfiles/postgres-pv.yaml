@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage  # This line ensures it matches the requested StorageClass
+  hostPath:
+    path: "/home/docker/data"  # Updated to a path inside Minikube with proper permissions
