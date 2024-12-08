@@ -1,31 +1,29 @@
 config:
     target: http://127.0.0.1:63929/tukano/rest
     phases:
-        - name: Delete users and shorts
+        - name: Create shorts
           duration: 10
-          arrivalRate: 5
+          arrivalRate: 1
+          rampTo: 5
+        - name: Create many shorts
+          duration: 2
+          arrivalRate: 10
     payload:
         path: ./data/usersTest.csv
         order: sequence
         skipHeader: true
-        delimiter: ","
-        skipEmptyLines: true
         fields:
             - "userId"
             - "pwd"
             - "email"
             - "displayName"
+    plugins:
+        metrics-by-endpoint: {}
+
 scenarios:
-    - name: Delete users and shorts
+    - name: Post shorts for users
       flow:
-        - delete:
-            url: "/users/{{ userId }}"
-            headers:
-                Content-Type: application/json
-        - delete:
+        - post:
             url: "/shorts/{{ userId }}?pwd={{ pwd }}"
             headers:
                 Content-Type: application/json
-      phases:
-        - duration: 1
-          arrivalRate: 1

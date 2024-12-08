@@ -1,11 +1,11 @@
 config:
-    target: http://127.0.0.1:8080/tukano/rest
+    target: http://127.0.0.1:63929/tukano/rest
     phases:
-        - name: simple_post
-          duration: 1
-          arrivalRate: 3
+        - name: Get users
+          duration: 10
+          arrivalRate: 5
     payload:
-        path: ./data/users.csv
+        path: ./data/usersTest.csv
         order: sequence
         skipHeader: true
         delimiter: ","
@@ -23,6 +23,3 @@ scenarios:
             url: "/users/{{ userId }}?userId={{ userId }}&pwd={{ pwd }}"
             headers:
                 Content-Type: application/json
-      phases:
-        - duration: 1
-          arrivalRate: 1

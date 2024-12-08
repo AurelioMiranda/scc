@@ -1,5 +1,5 @@
 config:
-    target: http://127.0.0.1:8080/tukano/rest
+    target: http://127.0.0.1:63929/tukano/
     phases:
         - name: simple_post
           duration: 1
@@ -30,17 +30,17 @@ scenarios:
     - name: All gets
       flow:
         - get:
-            url: /users/ag?pwd=1234
+            url: /users/kevin?pwd=pass
         - get:
-            url: http://localhost:8080/tukano/rest/users?query=r
+            url: /users?query=r
         - get:
-            url: http://127.0.0.1:8080/tukano/rest/shorts/mark+25cfbff3-8abc-4bbd-8b45-045868d39adf
+            url: /shorts/kevin+b3f1ccf3-be90-4c44-889b-2c5baaea5ea1
         - get:
-            url: http://127.0.0.1:8080/tukano/rest/shorts/mark/shorts?userId=mark
+            url: /shorts/kevin/shorts?userId=kevin
         - get:
-            url: http://localhost:8080/tukano/rest/shorts/mark+25cfbff3-8abc-4bbd-8b45-045868d39adf/likes?pwd=1234
+            url: /shorts/kevin+b3f1ccf3-be90-4c44-889b-2c5baaea5ea1/likes?pwd=pass
         - get:
-            url: http://localhost:8080/tukano/rest/blobs/jleo+75a37a10-bf63-4470-a664-db6195a92b5e?Content-Type=application/octet-stream
+            url: /blobs/kevin+b3f1ccf3-be90-4c44-889b-2c5baaea5ea1?Content-Type=application/octet-stream
       phases:
         - duration: 1
           arrivalRate: 1

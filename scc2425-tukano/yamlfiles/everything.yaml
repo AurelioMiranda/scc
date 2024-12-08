@@ -1,0 +1,233 @@
+# This is a helper file that quickly creates pods, services and volumes needed to run the app.
+# Beats having to apply the files one by one
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:latest
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+---
+        
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage  # This line ensures it matches the requested StorageClass
+  hostPath:
+    path: "/home/docker/data"  # Updated to a path inside Minikube with proper permissions
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-service
+  template:
+    metadata:
+      labels:
+        app: db-service
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: db-service
+        image: postgres:latest
+        ports:
+        - containerPort: 5432
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        startupProbe:
+          tcpSocket:
+            port: 5432
+          failureThreshold: 5
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          failureThreshold: 5
+        env:
+        - name: POSTGRES_DB
+          value: tukano
+        - name: POSTGRES_USER
+          value: megaadmin
+        - name: POSTGRES_PASSWORD
+          value: passwordmega
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+spec:
+  type: ClusterIP
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+  selector:
+    app: db-service
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tukano-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tukano-service
+  template:
+    metadata:
+      labels:
+        app: tukano-service
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: tukano-service
+        image: amgaboleiro/scc2425-tukanoapp:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-storage
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox
+        command: ['sh', '-c', 'until nc -zv db-service 5432; do echo waiting for postgres; sleep 2; done;']
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+          limits:
+            cpu: 75m
+            memory: 128Mi
+      - name: wait-for-redis
+        image: busybox
+        command: ['sh', '-c', 'until nc -zv redis 6379; do echo waiting for redis; sleep 2; done;']
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tukano-service
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: tukano-service

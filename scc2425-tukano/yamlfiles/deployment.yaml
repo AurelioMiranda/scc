@@ -16,7 +16,7 @@ spec:
         "kubernetes.io/os": linux
       containers:
       - name: tukano-service
-        image: rafaelpires70068/scc2425-tukanoapp:latest
+        image: amgaboleiro/scc2425-tukanoapp:latest
         ports:
         - containerPort: 8080
         resources:

@@ -1,0 +1,34 @@
+config:
+    target: http://127.0.0.1:63929/tukano/rest
+    phases:
+        - name: Create users
+          duration: 10
+          arrivalRate: 1
+          rampTo: 5
+        - name: Create many users
+          duration: 2
+          arrivalRate: 10
+    payload:
+        path: ./data/usersTest.csv
+        order: sequence
+        skipHeader: true
+        fields:
+            - "userId"
+            - "pwd"
+            - "email"
+            - "displayName"
+    plugins:
+        metrics-by-endpoint: {}
+
+scenarios:
+    - name: Create users
+      flow:
+        - post:
+            url: /users/
+            headers:
+                Content-Type: application/json
+            json:
+                userId: "{{ userId }}"
+                pwd: "{{ pwd }}"
+                email: "{{ email }}"
+                displayName: "{{ displayName }}"
