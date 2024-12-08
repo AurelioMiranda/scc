@@ -17,15 +17,18 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import redis.clients.jedis.Jedis;
 import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.Shorts;
 import tukano.api.User;
+import tukano.cache.RedisCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
 import utils.DB;
+import utils.JSON;
 
 public class JavaShorts implements Shorts {
 
@@ -52,15 +55,15 @@ public class JavaShorts implements Shorts {
 			var blobUrl = format("%s/%s/%s", TukanoRestServer.serverURI, Blobs.NAME, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
 
-			//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-			//	var key = "short:" + shortId;
-			//	var value = JSON.encode(shrt);
-			//	jedis.set(key, value);
-			//	jedis.expire(key, RedisCache.ALIVE_TIME);
+			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+				var key = "short:" + shortId;
+				var value = JSON.encode(shrt);
+				jedis.set(key, value);
+				jedis.expire(key, RedisCache.ALIVE_TIME);
 
-			//	var cnt = jedis.incr(RedisCache.NUM_SHORTS_COUNTER);
-			//	Log.info("Total shorts: " + cnt);
-			//}
+				var cnt = jedis.incr(RedisCache.NUM_SHORTS_COUNTER);
+				Log.info("Total shorts: " + cnt);
+			}
 
 			return errorOrValue(DB.insertOne(shrt), s -> s.copyWithLikes_And_Token(0));
 		});
@@ -73,16 +76,16 @@ public class JavaShorts implements Shorts {
 		if (shortId == null)
 			return error(BAD_REQUEST);
 
-		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-		//	var key = "short:" + shortId;
-		//	var val = jedis.get(key);
-	
-		//	if (val != null) {
-		//		jedis.expire(key, RedisCache.ALIVE_TIME);
-		//		var short1 = JSON.decode(val, Short.class);
-		//		return Result.ok(short1);
-		//	}
-		//}
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			var key = "short:" + shortId;
+			var val = jedis.get(key);
+
+			if (val != null) {
+				jedis.expire(key, RedisCache.ALIVE_TIME);
+				var short1 = JSON.decode(val, Short.class);
+				return Result.ok(short1);
+			}
+		}
 
 		var query = format("SELECT count(*) FROM Likes l WHERE l.shortId = '%s'", shortId);
 		var likes = DB.sql(query, Long.class);
@@ -93,14 +96,14 @@ public class JavaShorts implements Shorts {
 	public Result<Void> deleteShort(String shortId, String password) {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
 
-		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-		//	var key = "short:" + shortId;
-		//	var val = jedis.get(key);
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			var key = "short:" + shortId;
+			var val = jedis.get(key);
 
-		//	if (val != null) {
-		//		jedis.del(key);
-		//	}
-		//}
+			if (val != null) {
+				jedis.del(key);
+			}
+		}
 
 		return errorOrResult(getShort(shortId), shrt -> {
 			return errorOrResult(okUser(shrt.getOwnerId(), password), user -> {
@@ -168,16 +171,16 @@ public class JavaShorts implements Shorts {
 	public Result<List<String>> getFeed(String userId, String password) {
 		Log.info(() -> format("getFeed : userId = %s, pwd = %s\n", userId, password));
 
-		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-		//	var cachedFeed = jedis.get(key);
-		//	if (cachedFeed != null) {
-		//		jedis.expire(key, RedisCache.ALIVE_TIME);
-		//		List<String> feed = Arrays
-		//				.asList(cachedFeed.replace("[", "")
-		//						.replace("]", "").replace("\"", "").split(","));
-		//		return Result.ok(feed);
-		//	}
-		//}
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			var cachedFeed = jedis.get(userId);
+			if (cachedFeed != null) {
+				jedis.expire(userId, RedisCache.ALIVE_TIME);
+				List<String> feed = Arrays
+						.asList(cachedFeed.replace("[", "")
+								.replace("]", "").replace("\"", "").split(","));
+				return Result.ok(feed);
+			}
+		}
 
 		final var QUERY_FMT = """
 				SELECT s.shortId, s.timestamp FROM Short s WHERE	s.ownerId = '%s'

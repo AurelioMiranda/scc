@@ -14,9 +14,11 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
+import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
+import tukano.cache.RedisCache;
 import utils.DB;
 import utils.JSON;
 
@@ -41,14 +43,14 @@ public class JavaUsers implements Users {
 		if (badUserInfo(user))
 			return error(FORBIDDEN);
 
-		// try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-		// var key = "user:" + user.getUserId();
-		// var value = JSON.encode(user);
-		// jedis.set(key, value);
-		// jedis.expire(key, RedisCache.ALIVE_TIME);
-		// var cnt = jedis.incr(RedisCache.NUM_USERS_COUNTER);
-		// Log.info("Total users: " + cnt);
-		// }
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			var key = "user:" + user.getUserId();
+			var value = JSON.encode(user);
+			jedis.set(key, value);
+			jedis.expire(key, RedisCache.ALIVE_TIME);
+			var cnt = jedis.incr(RedisCache.NUM_USERS_COUNTER);
+			Log.info("Total users: " + cnt);
+		}
 
 		return errorOrValue(DB.insertOne(user), user.getUserId());
 	}
@@ -60,16 +62,16 @@ public class JavaUsers implements Users {
 		if (userId == null)
 			return error(BAD_REQUEST);
 
-		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-		//	var key = "user:" + userId;
-		//	var val = jedis.get(key);
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			var key = "user:" + userId;
+			var val = jedis.get(key);
 		
-		//	if (val != null) {
-		//		jedis.expire(key, RedisCache.ALIVE_TIME);
-		//		var user = JSON.decode(val, User.class);
-		//		return validatedUserOrError(ok(user), pwd);
-		//	}
-		//}
+			if (val != null) {
+				jedis.expire(key, RedisCache.ALIVE_TIME);
+				var user = JSON.decode(val, User.class);
+				return validatedUserOrError(ok(user), pwd);
+			}
+		}
 
 		return validatedUserOrError(DB.getOne(userId, User.class), pwd);
 	}
@@ -81,15 +83,15 @@ public class JavaUsers implements Users {
 		if (badUpdateUserInfo(userId, pwd, other))
 			return error(BAD_REQUEST);
 
-		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-		//	var key = "user:" + userId;
-		//	var val = jedis.get(key);
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			var key = "user:" + userId;
+			var val = jedis.get(key);
 
-		//	if (val != null) {
-		//		jedis.expire(key, RedisCache.ALIVE_TIME);
-		//		jedis.set(key, JSON.encode(other));
-		//	}
-		//}
+			if (val != null) {
+				jedis.expire(key, RedisCache.ALIVE_TIME);
+				jedis.set(key, JSON.encode(other));
+			}
+		}
 
 		return errorOrResult(validatedUserOrError(DB.getOne(userId, User.class), pwd),
 				user -> DB.updateOne(user.updateFrom(other)));
@@ -102,14 +104,14 @@ public class JavaUsers implements Users {
 		if (userId == null || pwd == null)
 			return error(BAD_REQUEST);
 
-		//try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-		//	var key = "user:" + userId;
-		//	var val = jedis.get(key);
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+			var key = "user:" + userId;
+			var val = jedis.get(key);
 	
-		//	if (val != null) {
-		//		jedis.del(key);
-		//	}
-		//}
+			if (val != null) {
+				jedis.del(key);
+			}
+		}
 
 		return errorOrResult(validatedUserOrError(DB.getOne(userId, User.class), pwd), user -> {
 
